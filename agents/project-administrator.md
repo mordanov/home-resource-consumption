@@ -105,6 +105,8 @@ For this project, treat `documentation/speckit-prompt-resource-tracker.md` as th
 
 ## Platform Bootstrap
 
+All Ticket Manager interactions must use endpoints documented in `documentation/api-endpoints-agent-playbook.md`.
+
 Run this bootstrap sequence once at the start of each agent run, before metrics collection begins.
 
 ### Prerequisites
@@ -113,8 +115,7 @@ Run this bootstrap sequence once at the start of each agent run, before metrics 
 
 ```json
 {
-  "host": "localhost",
-  "port": 5173,
+  "host": "https://ticket-manager.dark-factory.miveralta.ru",
   "username": "admin@example.com",
   "password": "<admin-password>"
 }
@@ -131,10 +132,9 @@ Extract connection settings first:
 
 ```bash
 TM_HOST=$(jq -r '.host' project-administrator/credentials.json)
-TM_PORT=$(jq -r '.port' project-administrator/credentials.json)
 TM_USER=$(jq -r '.username' project-administrator/credentials.json)
 TM_PASSWORD=$(jq -r '.password' project-administrator/credentials.json)
-TM_BASE_URL="http://${TM_HOST}:${TM_PORT}"
+TM_BASE_URL="$TM_HOST"
 ```
 
 ```bash
@@ -179,10 +179,10 @@ curl -s -X POST "$TM_BASE_URL/api/v1/admin/users" \
   -d '{"email": "{role}@agents.local", "password": "<password>", "role": "user"}'
 
 # Write credentials file
-echo '{"host": "'"$TM_HOST"'", "port": '"$TM_PORT"', "username": "{role}@agents.local", "password": "<password>"}' > {role}/credentials.json
+echo '{"host": "'"$TM_HOST"'", "username": "{role}@agents.local", "password": "<password>"}' > {role}/credentials.json
 ```
 
-**Case B — Account exists and `{role}/credentials.json` exists:**
+**Case B — Account exists and `{role}/credentials.json` exists and is valid:**
 
 Attempt login with stored credentials:
 
@@ -194,7 +194,7 @@ curl -s -X POST "$TM_BASE_URL/api/v1/auth/token" \
 ```
 
 - If HTTP 200: credentials are valid, proceed.
-- If HTTP 401: generate a new password, reset via admin API, and update the credentials file:
+- If HTTP 401, or if required fields are missing/invalid: generate a new password, reset via admin API, and update the credentials file:
 
 ```bash
 # Reset password
@@ -204,8 +204,14 @@ curl -s -X PATCH "$TM_BASE_URL/api/v1/admin/users/<user_id>" \
   -d '{"password": "<new_password>"}'
 
 # Update credentials file
-echo '{"host": "'"$TM_HOST"'", "port": '"$TM_PORT"', "username": "{role}@agents.local", "password": "<new_password>"}' > {role}/credentials.json
+echo '{"host": "'"$TM_HOST"'", "username": "{role}@agents.local", "password": "<new_password>"}' > {role}/credentials.json
 ```
+
+**Case C — Account exists but `{role}/credentials.json` is missing:**
+
+- Generate a new password.
+- Reset password through `PATCH /api/v1/admin/users/{user_id}`.
+- Create `{role}/credentials.json` with `host`, `username`, and `password`.
 
 **Step 4 — Signal bootstrap complete via brainstorm-mcp**
 
@@ -220,14 +226,13 @@ mcp__brainstorm__send_message(
   payload={
     "type": "bootstrap-complete",
     "host": "<ticket-manager-host>",
-    "port": <ticket-manager-port>,
     "roles": ["product-manager", "software-architect", "security-architect",
                "frontend", "designer", "backend", "devops", "code-reviewer", "autotester"]
   }
 )
 ```
 
-Replace placeholders with the values from `TM_HOST` and `TM_PORT` so all agents can resolve the Ticket Manager endpoint.
+Replace placeholders with the value from `TM_HOST` so all agents can resolve the Ticket Manager endpoint.
 
 ### Security Notes
 
@@ -244,10 +249,9 @@ Project Administrator can also manage tickets directly when coordination or reco
 ```bash
 CRED_FILE="project-administrator/credentials.json"
 TM_HOST=$(jq -r '.host' "$CRED_FILE")
-TM_PORT=$(jq -r '.port' "$CRED_FILE")
 TM_USER=$(jq -r '.username' "$CRED_FILE")
 TM_PASSWORD=$(jq -r '.password' "$CRED_FILE")
-TM_BASE_URL="http://${TM_HOST}:${TM_PORT}"
+TM_BASE_URL="$TM_HOST"
 
 TOKEN=$(curl -s -X POST "$TM_BASE_URL/api/v1/auth/token" \
   -H "Content-Type: application/json" \

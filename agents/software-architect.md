@@ -73,16 +73,17 @@ For this project, treat `documentation/speckit-prompt-resource-tracker.md` as th
 
 ## Platform Authentication
 
+Use only Ticket Manager API endpoints documented in `documentation/api-endpoints-agent-playbook.md`.
+
 Use Ticket Manager connection details provisioned by `project-administrator` in `software-architect/credentials.json`.
 
 ### Credential format
 
-Each agent credential file must include host, port, username, and password:
+Each agent credential file must include host, username, and password:
 
 ```json
 {
-  "host": "localhost",
-  "port": 5173,
+  "host": "https://ticket-manager.dark-factory.miveralta.ru",
   "username": "software-architect@agents.local",
   "password": "<generated-password>"
 }
@@ -99,12 +100,11 @@ CRED_FILE="software-architect/credentials.json"
 test -f "$CRED_FILE" || { echo "Missing $CRED_FILE" >&2; exit 1; }
 
 TM_HOST=$(jq -r '.host' "$CRED_FILE")
-TM_PORT=$(jq -r '.port' "$CRED_FILE")
 TM_USER=$(jq -r '.username' "$CRED_FILE")
 TM_PASSWORD=$(jq -r '.password' "$CRED_FILE")
-TM_BASE_URL="http://${TM_HOST}:${TM_PORT}"
+TM_BASE_URL="$TM_HOST"
 
-for v in TM_HOST TM_PORT TM_USER TM_PASSWORD; do
+for v in TM_HOST TM_USER TM_PASSWORD; do
   [ -n "${!v}" ] && [ "${!v}" != "null" ] || { echo "Invalid $CRED_FILE: missing $v" >&2; exit 1; }
 done
 ```
