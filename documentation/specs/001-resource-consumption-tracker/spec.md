@@ -192,6 +192,18 @@ A household member wants to download a formatted PDF report summarising their co
 
 ---
 
+## Clarifications
+
+### Session 2026-06-05
+
+- Q: What scope of UX design deliverables should the Designer agent produce before frontend implementation begins? → A: Interaction state specs + accessibility checklist only (`component-behavior.md` + `accessibility-checklist.md`). Full wireframes and user-flow diagrams are deferred. The Designer agent must deliver interaction state guidance and accessibility requirements for all pages before frontend implementation of each page begins.
+
+### UX Design Requirements (derived from clarification)
+
+**FR-028**: The Designer agent MUST produce `docs/ux/component-behavior.md` covering interaction states for all interactive components (drag-and-drop upload zone, parsing progress, parsed-data preview and confirmation, bill table filters, prediction cards, chart controls, export modal) before the corresponding frontend page is implemented.
+
+**FR-029**: The Designer agent MUST produce `docs/ux/accessibility-checklist.md` covering: keyboard operability for all interactive controls, visible focus indicators, screen-reader labels for form fields and chart controls, color contrast requirements for data visualisation and text, and non-color status indicators (trend arrows with labels, not color-only) for all seven pages before frontend implementation begins.
+
 ## Assumptions
 
 - The application serves a single registered household per deployment — there is no concept of an organisation, team, or public user directory.
