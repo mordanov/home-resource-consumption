@@ -229,13 +229,11 @@ class AnalyticsService:
         prev_c = Decimal(str(r.prev_year_consumption)) if r.prev_year_consumption else None
         curr_cost = Decimal(str(r.current_cost))
         prev_cost = Decimal(str(r.prev_year_cost)) if r.prev_year_cost else None
-        c_pct = (
-            ((curr_c - prev_c) / prev_c * 100).quantize(Decimal("0.01"))
-            if prev_c else None
-        )
+        c_pct = ((curr_c - prev_c) / prev_c * 100).quantize(Decimal("0.01")) if prev_c else None
         cost_pct = (
             ((curr_cost - prev_cost) / prev_cost * 100).quantize(Decimal("0.01"))
-            if prev_cost else None
+            if prev_cost
+            else None
         )
         return MonthlyYoYPoint(
             month=r.month,
