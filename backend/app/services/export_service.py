@@ -35,6 +35,7 @@ class ExportService:
         cost_svg = self.chart_renderer.render_monthly_cost(summary.monthly_cost)
         html_content = self._render_template(spec, summary, consumption_svg, cost_svg)
         from weasyprint import HTML  # lazy import — libgobject only available in Docker
+
         result: bytes = HTML(string=html_content).write_pdf()
         return result
 

@@ -24,10 +24,7 @@ class BillRepository(BaseRepository[Bill]):
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[Bill], int]:
-        base_q = (
-            select(Bill)
-            .where(Bill.user_id == user_id, Bill.deleted_at.is_(None))
-        )
+        base_q = select(Bill).where(Bill.user_id == user_id, Bill.deleted_at.is_(None))
         if resource_type:
             base_q = base_q.where(Bill.resource_type == resource_type.value)
         if date_from:

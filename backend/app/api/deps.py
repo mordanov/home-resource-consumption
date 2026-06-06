@@ -51,5 +51,6 @@ def get_analytics_service(db: AsyncSession = Depends(get_db)) -> AnalyticsServic
 def get_export_service(db: AsyncSession = Depends(get_db)) -> object:
     from app.services.chart_renderer import ChartRenderer
     from app.services.export_service import ExportService
+
     analytics = AnalyticsService(db)
     return ExportService(analytics, ChartRenderer())

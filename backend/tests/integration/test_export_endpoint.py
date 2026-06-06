@@ -7,6 +7,7 @@ FR-5 verification:
 - Date range spanning > 24 months returns 400
 - ExportService has no direct dependency on request or response objects
 """
+
 from __future__ import annotations
 
 import ast
@@ -20,17 +21,22 @@ from httpx import AsyncClient
 # Static code check: ExportService must not import request/response types
 # ---------------------------------------------------------------------------
 
+
 def test_export_service_has_no_http_objects() -> None:
     """ExportService must not import Request, Response, or any HTTP layer objects."""
-    service_path = (
-        pathlib.Path(__file__).parents[2] / "app" / "services" / "export_service.py"
-    )
+    service_path = pathlib.Path(__file__).parents[2] / "app" / "services" / "export_service.py"
     if not service_path.exists():
         pytest.skip("export_service.py not yet implemented")
 
     tree = ast.parse(service_path.read_text())
-    forbidden_names = {"Request", "Response", "HTTPException", "JSONResponse",
-                       "StreamingResponse", "BackgroundTasks"}
+    forbidden_names = {
+        "Request",
+        "Response",
+        "HTTPException",
+        "JSONResponse",
+        "StreamingResponse",
+        "BackgroundTasks",
+    }
 
     violations: list[str] = []
     for node in ast.walk(tree):
@@ -40,14 +46,14 @@ def test_export_service_has_no_http_objects() -> None:
                     violations.append(f"line {node.lineno}: {ast.unparse(node)}")
 
     assert not violations, (
-        "ExportService must not depend on HTTP request/response objects:\n"
-        + "\n".join(violations)
+        "ExportService must not depend on HTTP request/response objects:\n" + "\n".join(violations)
     )
 
 
 # ---------------------------------------------------------------------------
 # Integration tests (require full Docker Compose stack)
 # ---------------------------------------------------------------------------
+
 
 async def _register_login_and_seed(client: AsyncClient, username: str, email: str) -> str:
     """Register, login, and seed one bill per resource type."""
@@ -93,7 +99,10 @@ async def _register_login_and_seed(client: AsyncClient, username: str, email: st
 # T075-1: Valid export returns application/pdf with %PDF magic bytes
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="Requires WeasyPrint system libraries (libgobject) — not available locally")
+
+@pytest.mark.skip(
+    reason="Requires WeasyPrint system libraries (libgobject) — not available locally"
+)
 async def test_pdf_export_returns_valid_pdf(client: AsyncClient) -> None:
     token = await _register_login_and_seed(client, "exportuser1", "export1@example.com")
     today = date.today()
@@ -118,7 +127,10 @@ async def test_pdf_export_returns_valid_pdf(client: AsyncClient) -> None:
 # T075-2: Date range > 24 months → 400
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="Requires WeasyPrint system libraries (libgobject) — not available locally")
+
+@pytest.mark.skip(
+    reason="Requires WeasyPrint system libraries (libgobject) — not available locally"
+)
 async def test_pdf_export_over_24_months_returns_400(client: AsyncClient) -> None:
     token = await _register_login_and_seed(client, "exportuser2", "export2@example.com")
     today = date.today()
@@ -130,16 +142,17 @@ async def test_pdf_export_over_24_months_returns_400(client: AsyncClient) -> Non
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert resp.status_code == 400, (
-        f"Expected 400 for >24 month range, got {resp.status_code}"
-    )
+    assert resp.status_code == 400, f"Expected 400 for >24 month range, got {resp.status_code}"
 
 
 # ---------------------------------------------------------------------------
 # T075-3: Unauthenticated request → 401
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="Requires WeasyPrint system libraries (libgobject) — not available locally")
+
+@pytest.mark.skip(
+    reason="Requires WeasyPrint system libraries (libgobject) — not available locally"
+)
 async def test_pdf_export_unauthenticated_returns_401(client: AsyncClient) -> None:
     today = date.today()
     resp = await client.get(
@@ -152,12 +165,19 @@ async def test_pdf_export_unauthenticated_returns_401(client: AsyncClient) -> No
 # T075-4: PDF with no bills in range still returns valid response (empty report)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason="Requires WeasyPrint system libraries (libgobject) — not available locally")
+
+@pytest.mark.skip(
+    reason="Requires WeasyPrint system libraries (libgobject) — not available locally"
+)
 async def test_pdf_export_no_bills_returns_valid_pdf(client: AsyncClient) -> None:
     password = "EmptyPDF1!"
     await client.post(
         "/api/v1/auth/register",
-        json={"username": "emptyexportuser", "email": "emptyexport@example.com", "password": password},
+        json={
+            "username": "emptyexportuser",
+            "email": "emptyexport@example.com",
+            "password": password,
+        },
     )
     login_resp = await client.post(
         "/api/v1/auth/login",

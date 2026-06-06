@@ -6,6 +6,7 @@ Verification:
 - Prediction records stored in Prediction table on every call
 - Data isolation: predictions are user-scoped
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -31,7 +32,9 @@ async def _register_and_login(
     return resp.json()["access_token"]
 
 
-async def _add_bills(client: AsyncClient, token: str, count: int, resource_type: str = "ELECTRICITY") -> None:
+async def _add_bills(
+    client: AsyncClient, token: str, count: int, resource_type: str = "ELECTRICITY"
+) -> None:
     unit = "KWH" if resource_type == "ELECTRICITY" else "CUBIC_METER"
     today = date.today()
     for i in range(count):
@@ -57,6 +60,7 @@ async def _add_bills(client: AsyncClient, token: str, count: int, resource_type:
 # FR-3-1: < 3 bills → 409 with bills_needed
 # ---------------------------------------------------------------------------
 
+
 async def test_prediction_with_fewer_than_3_bills_returns_409(client: AsyncClient) -> None:
     token = await _register_and_login(client, "pred_insufficient", "pred_insuf@example.com")
     await _add_bills(client, token, count=2, resource_type="ELECTRICITY")
@@ -78,6 +82,7 @@ async def test_prediction_with_fewer_than_3_bills_returns_409(client: AsyncClien
 # FR-3-2: 0 bills → 409 with correct bills_needed = 3
 # ---------------------------------------------------------------------------
 
+
 async def test_prediction_with_0_bills_says_needs_3(client: AsyncClient) -> None:
     token = await _register_and_login(client, "pred_zero", "pred_zero@example.com")
 
@@ -97,6 +102,7 @@ async def test_prediction_with_0_bills_says_needs_3(client: AsyncClient) -> None
 # ---------------------------------------------------------------------------
 # FR-3-3: ≥ 3 bills → successful prediction within 20% of extrapolated value
 # ---------------------------------------------------------------------------
+
 
 async def test_prediction_with_sufficient_bills_returns_valid_prediction(
     client: AsyncClient,
@@ -129,6 +135,7 @@ async def test_prediction_with_sufficient_bills_returns_valid_prediction(
 # ---------------------------------------------------------------------------
 # FR-3-4: Prediction record stored on every call
 # ---------------------------------------------------------------------------
+
 
 async def test_prediction_stored_on_every_call(client: AsyncClient) -> None:
     """Each prediction call must persist a Prediction DB record."""

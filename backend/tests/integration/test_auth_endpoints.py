@@ -8,11 +8,11 @@ FR-0 integration verification:
 - Refresh token rotation (old token unusable after refresh)
 - hashed_password absent from all response bodies
 """
+
 from __future__ import annotations
 
 import pytest
 from httpx import AsyncClient
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -21,7 +21,10 @@ pytestmark = pytest.mark.asyncio
 # Helpers
 # ---------------------------------------------------------------------------
 
-async def register_user(client: AsyncClient, username: str, email: str, password: str = "TestPass1!") -> dict:
+
+async def register_user(
+    client: AsyncClient, username: str, email: str, password: str = "TestPass1!"
+) -> dict:
     resp = await client.post(
         "/api/v1/auth/register",
         json={"username": username, "email": email, "password": password},
@@ -41,6 +44,7 @@ async def login_user(client: AsyncClient, username: str, password: str = "TestPa
 # ---------------------------------------------------------------------------
 # T027-1: Full happy-path cycle
 # ---------------------------------------------------------------------------
+
 
 async def test_full_auth_cycle(client: AsyncClient) -> None:
     """register → login → GET /auth/me → refresh → logout"""
@@ -73,30 +77,26 @@ async def test_full_auth_cycle(client: AsyncClient) -> None:
     # Refresh — cookie has secure=True so we must pass it explicitly on http://test
     raw_refresh = log["cookies"].get("refresh_token")
     assert raw_refresh, "Login must set refresh_token cookie"
-    refresh_resp = await client.post(
-        "/api/v1/auth/refresh", cookies={"refresh_token": raw_refresh}
-    )
+    refresh_resp = await client.post("/api/v1/auth/refresh", cookies={"refresh_token": raw_refresh})
     assert refresh_resp.status_code == 200, f"Refresh failed: {refresh_resp.json()}"
     new_token = refresh_resp.json()["access_token"]
-    assert isinstance(new_token, str) and len(new_token) > 20
+    assert isinstance(new_token, str)
+    assert len(new_token) > 20
 
     # Logout — pass the NEW cookie issued by refresh
     new_refresh = refresh_resp.cookies.get("refresh_token") or raw_refresh
-    logout_resp = await client.post(
-        "/api/v1/auth/logout", cookies={"refresh_token": new_refresh}
-    )
+    logout_resp = await client.post("/api/v1/auth/logout", cookies={"refresh_token": new_refresh})
     assert logout_resp.status_code == 204
 
     # Old refresh cookie must be revoked (use old raw_refresh token)
-    revoked_resp = await client.post(
-        "/api/v1/auth/refresh", cookies={"refresh_token": raw_refresh}
-    )
+    revoked_resp = await client.post("/api/v1/auth/refresh", cookies={"refresh_token": raw_refresh})
     assert revoked_resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
 # T027-2: Duplicate username → 409
 # ---------------------------------------------------------------------------
+
 
 async def test_register_duplicate_username_returns_409(client: AsyncClient) -> None:
     await register_user(client, "dupeuser", "first@example.com")
@@ -108,6 +108,7 @@ async def test_register_duplicate_username_returns_409(client: AsyncClient) -> N
 # T027-3: Duplicate email → 409
 # ---------------------------------------------------------------------------
 
+
 async def test_register_duplicate_email_returns_409(client: AsyncClient) -> None:
     await register_user(client, "user_email_one", "shared@example.com")
     result = await register_user(client, "user_email_two", "shared@example.com")
@@ -118,6 +119,7 @@ async def test_register_duplicate_email_returns_409(client: AsyncClient) -> None
 # T027-4: Login with wrong password → 401
 # ---------------------------------------------------------------------------
 
+
 async def test_login_wrong_password_returns_401(client: AsyncClient) -> None:
     await register_user(client, "wrongpwduser", "wrongpwd@example.com")
     result = await login_user(client, "wrongpwduser", "WrongPassword999!")
@@ -127,6 +129,7 @@ async def test_login_wrong_password_returns_401(client: AsyncClient) -> None:
 # ---------------------------------------------------------------------------
 # T027-5: Expired access token → 401
 # ---------------------------------------------------------------------------
+
 
 async def test_expired_access_token_returns_401(client: AsyncClient) -> None:
     expired_token = (
@@ -144,6 +147,7 @@ async def test_expired_access_token_returns_401(client: AsyncClient) -> None:
 # ---------------------------------------------------------------------------
 # T027-6: hashed_password never in any response body
 # ---------------------------------------------------------------------------
+
 
 async def test_hashed_password_absent_from_responses(client: AsyncClient) -> None:
     reg = await register_user(client, "nohashuser", "nohash@example.com")

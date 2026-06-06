@@ -6,12 +6,12 @@ FR-3 verification:
 - confidence_interval_lower ≤ prediction ≤ confidence_interval_upper
 - Fewer than 3 bills raises InsufficientDataError (or similar)
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -20,6 +20,7 @@ import pytest
 def _import_predictor():
     try:
         from app.services.ml.predictor import LinearRegressionPredictor  # type: ignore[import]
+
         return LinearRegressionPredictor
     except ModuleNotFoundError:
         pytest.skip("LinearRegressionPredictor not yet implemented")
@@ -28,6 +29,7 @@ def _import_predictor():
 def _import_insufficient_error():
     try:
         from app.core.exceptions import InsufficientDataError  # type: ignore[import]
+
         return InsufficientDataError
     except ModuleNotFoundError:
         pytest.skip("InsufficientDataError exception not yet implemented")
@@ -76,15 +78,16 @@ def _make_linear_dataset(
 # T057-1: Known linear trend — prediction within 15% of extrapolated value
 # ---------------------------------------------------------------------------
 
+
 def test_linear_trend_prediction_within_15_percent() -> None:
-    LinearRegressionPredictor = _import_predictor()
+    predictor_cls = _import_predictor()
 
     start = 100.0
     increment = 10.0
     n = 12
     bills = _make_linear_dataset(n_bills=n, start_consumption=start, increment=increment)
 
-    predictor = LinearRegressionPredictor()
+    predictor = predictor_cls()
     predictor.fit(bills)
     result = predictor.predict(horizon_months=1)
 
@@ -107,11 +110,12 @@ def test_linear_trend_prediction_within_15_percent() -> None:
 # T057-2: confidence_interval_lower ≤ prediction ≤ confidence_interval_upper
 # ---------------------------------------------------------------------------
 
+
 def test_confidence_interval_bounds_are_valid() -> None:
-    LinearRegressionPredictor = _import_predictor()
+    predictor_cls = _import_predictor()
 
     # Use a noisy dataset to avoid degenerate CI (lower == upper happens with perfect linear fit)
-    import random
+
     bills = []
     today = date.today()
     for i in range(12):
@@ -120,7 +124,7 @@ def test_confidence_interval_bounds_are_valid() -> None:
         consumption = 100.0 + i * 10.0 + (i % 3) * 5.0
         bills.append(_make_bill(bill_date=bill_date, amount_consumed=consumption))
 
-    predictor = LinearRegressionPredictor()
+    predictor = predictor_cls()
     predictor.fit(bills)
 
     for horizon in (1, 2, 3):
@@ -144,29 +148,32 @@ def test_confidence_interval_bounds_are_valid() -> None:
 # T057-3: Fewer than 3 bills → InsufficientDataError (or similar exception)
 # ---------------------------------------------------------------------------
 
+
 def test_fewer_than_3_bills_raises_insufficient_data_error() -> None:
-    LinearRegressionPredictor = _import_predictor()
+    predictor_cls = _import_predictor()
 
     # 0 bills
-    predictor_0 = LinearRegressionPredictor()
-    with pytest.raises(Exception) as exc_info:
+    predictor_0 = predictor_cls()
+    with pytest.raises(Exception, match=r".") as exc_info:
         predictor_0.fit([])
-    assert "insufficient" in str(exc_info.value).lower() or \
-           "not enough" in str(exc_info.value).lower() or \
-           exc_info.type.__name__ in ("InsufficientDataError", "ValueError", "RuntimeError")
+    assert (
+        "insufficient" in str(exc_info.value).lower()
+        or "not enough" in str(exc_info.value).lower()
+        or exc_info.type.__name__ in ("InsufficientDataError", "ValueError", "RuntimeError")
+    )
 
     # 1 bill
-    predictor_1 = LinearRegressionPredictor()
-    with pytest.raises(Exception):
+    predictor_1 = predictor_cls()
+    with pytest.raises(Exception, match=r"."):
         predictor_1.fit([_make_bill(date.today(), 100.0)])
 
     # 2 bills
-    predictor_2 = LinearRegressionPredictor()
+    predictor_2 = predictor_cls()
     bills_2 = [
         _make_bill(date.today() - timedelta(days=30), 100.0),
         _make_bill(date.today(), 110.0),
     ]
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match=r"."):
         predictor_2.fit(bills_2)
 
 
@@ -174,11 +181,12 @@ def test_fewer_than_3_bills_raises_insufficient_data_error() -> None:
 # T057-4: predict() before fit() raises an error
 # ---------------------------------------------------------------------------
 
-def test_predict_before_fit_raises() -> None:
-    LinearRegressionPredictor = _import_predictor()
 
-    predictor = LinearRegressionPredictor()
-    with pytest.raises(Exception):
+def test_predict_before_fit_raises() -> None:
+    predictor_cls = _import_predictor()
+
+    predictor = predictor_cls()
+    with pytest.raises(Exception, match=r"."):
         predictor.predict(horizon_months=1)
 
 
@@ -186,32 +194,35 @@ def test_predict_before_fit_raises() -> None:
 # T057-5: model_version field is present and non-empty
 # ---------------------------------------------------------------------------
 
+
 def test_prediction_result_has_model_version() -> None:
-    LinearRegressionPredictor = _import_predictor()
+    predictor_cls = _import_predictor()
 
     bills = _make_linear_dataset(n_bills=6)
-    predictor = LinearRegressionPredictor()
+    predictor = predictor_cls()
     predictor.fit(bills)
     result = predictor.predict(horizon_months=1)
 
     assert hasattr(result, "model_version")
-    assert result.model_version and len(result.model_version) > 0
+    assert result.model_version
+    assert len(result.model_version) > 0
 
 
 # ---------------------------------------------------------------------------
 # T057-6: 3 bills exactly (boundary) — FR-3 requirement
 # ---------------------------------------------------------------------------
 
+
 def test_exactly_3_bills_accepted_bug_fr3() -> None:
     """FR-3: exactly 3 bills must produce a valid prediction (BUG-001 fixed)."""
-    LinearRegressionPredictor = _import_predictor()
+    predictor_cls = _import_predictor()
 
     bills = [
         _make_bill(date.today() - timedelta(days=60), 100.0),
         _make_bill(date.today() - timedelta(days=30), 110.0),
         _make_bill(date.today(), 120.0),
     ]
-    predictor = LinearRegressionPredictor()
+    predictor = predictor_cls()
     predictor.fit(bills)
     result = predictor.predict(horizon_months=1)
 
@@ -223,11 +234,12 @@ def test_exactly_3_bills_accepted_bug_fr3() -> None:
 # T057-7: predicted_cost is non-negative
 # ---------------------------------------------------------------------------
 
+
 def test_predicted_cost_is_non_negative() -> None:
-    LinearRegressionPredictor = _import_predictor()
+    predictor_cls = _import_predictor()
 
     bills = _make_linear_dataset(n_bills=6)
-    predictor = LinearRegressionPredictor()
+    predictor = predictor_cls()
     predictor.fit(bills)
     result = predictor.predict(horizon_months=1)
 

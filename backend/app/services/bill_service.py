@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 import pymupdf
@@ -48,6 +48,7 @@ class BillService:
 
     def _extract_image_text(self, content: bytes) -> str:
         import io
+
         image = Image.open(io.BytesIO(content))
         return str(pytesseract.image_to_string(image))
 
@@ -74,18 +75,24 @@ class BillService:
         self,
         user_id: UUID,
         resource_type: ResourceType | None,
-        date_from: object,
-        date_to: object,
+        date_from: date | None,
+        date_to: date | None,
         page: int,
         size: int,
     ) -> tuple[list[BillRead], int]:
         bills, total = await self.bill_repo.list_paginated(
-            user_id, resource_type, date_from, date_to, page, size  # type: ignore[arg-type]
+            user_id,
+            resource_type,
+            date_from,
+            date_to,
+            page,
+            size,
         )
         return [BillRead.model_validate(b) for b in bills], total
 
     async def get_by_id(self, bill_id: UUID, user_id: UUID) -> BillRead:
         from app.core.exceptions import ResourceNotFoundError
+
         bill = await self.bill_repo.get_active(bill_id, user_id)
         if not bill:
             raise ResourceNotFoundError("Bill", str(bill_id))
@@ -93,6 +100,7 @@ class BillService:
 
     async def delete(self, bill_id: UUID, user_id: UUID) -> str | None:
         from app.core.exceptions import ResourceNotFoundError
+
         bill = await self.bill_repo.get_active(bill_id, user_id)
         if not bill:
             raise ResourceNotFoundError("Bill", str(bill_id))

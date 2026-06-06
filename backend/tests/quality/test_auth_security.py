@@ -2,13 +2,13 @@
 
 rigour-labs gate: 10 rapid wrong-password requests must all return 401 (no 500s).
 """
+
 from __future__ import annotations
 
 import asyncio
 
 import pytest
 from httpx import AsyncClient
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -31,9 +31,7 @@ async def test_brute_force_10_wrong_passwords_all_return_401(client: AsyncClient
     responses = await asyncio.gather(*tasks)
 
     statuses = [r.status_code for r in responses]
-    assert all(s == 401 for s in statuses), (
-        f"Expected all 401, got: {statuses}"
-    )
+    assert all(s == 401 for s in statuses), f"Expected all 401, got: {statuses}"
 
 
 async def test_brute_force_nonexistent_user_all_return_401(client: AsyncClient) -> None:
@@ -49,6 +47,4 @@ async def test_brute_force_nonexistent_user_all_return_401(client: AsyncClient) 
     responses = await asyncio.gather(*tasks)
 
     statuses = [r.status_code for r in responses]
-    assert all(s in (401, 422) for s in statuses), (
-        f"Expected 401 or 422 for all, got: {statuses}"
-    )
+    assert all(s in (401, 422) for s in statuses), f"Expected 401 or 422 for all, got: {statuses}"

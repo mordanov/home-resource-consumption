@@ -61,8 +61,7 @@ class AnalyticsService:
             " WHERE user_id = :user_id"
             " AND deleted_at IS NULL"
             " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause +
-            " GROUP BY 1, 2"
+            " " + rt_clause + " GROUP BY 1, 2"
             " ORDER BY 1, 2"
         )
         rows = (await self.db.execute(sql, params)).fetchall()
@@ -86,8 +85,7 @@ class AnalyticsService:
             " WHERE user_id = :user_id"
             " AND deleted_at IS NULL"
             " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause +
-            " GROUP BY 1, 2"
+            " " + rt_clause + " GROUP BY 1, 2"
             " ORDER BY 1, 2"
         )
         rows = (await self.db.execute(sql, params)).fetchall()
@@ -113,8 +111,7 @@ class AnalyticsService:
             " WHERE user_id = :user_id"
             " AND deleted_at IS NULL"
             " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause +
-            " GROUP BY 1, 2"
+            " " + rt_clause + " GROUP BY 1, 2"
             " ORDER BY 1, 2"
         )
         rows = (await self.db.execute(sql, params)).fetchall()
@@ -137,8 +134,7 @@ class AnalyticsService:
             " WHERE user_id = :user_id"
             " AND deleted_at IS NULL"
             " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause +
-            " GROUP BY resource_type, yr"
+            " " + rt_clause + " GROUP BY resource_type, yr"
             "),"
             " max_year AS (SELECT MAX(yr) AS max_yr FROM yearly),"
             " current_y AS (SELECT resource_type, total FROM yearly, max_year WHERE yr = max_yr),"
@@ -183,8 +179,7 @@ class AnalyticsService:
             " WHERE user_id = :user_id"
             " AND deleted_at IS NULL"
             " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause +
-            " GROUP BY date_trunc('month', bill_date), resource_type"
+            " " + rt_clause + " GROUP BY date_trunc('month', bill_date), resource_type"
             " ORDER BY 1, 2"
         )
         rows = (await self.db.execute(sql, params)).fetchall()

@@ -10,9 +10,9 @@ FR-1 / FR-2 verification:
 - Deleted bill does not appear in subsequent GET /bills/
 - Paginated listing filtered by resource_type
 """
+
 from __future__ import annotations
 
-import io
 from datetime import date, timedelta
 
 import pytest
@@ -24,6 +24,7 @@ pytestmark = pytest.mark.asyncio
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def register_and_login(
     client: AsyncClient, username: str, email: str, password: str = "TestPass1!"
@@ -81,6 +82,7 @@ def make_bill_preview_payload(
 # T045-1: Upload synthetic PDF → BillPreview with correct fields
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.skip(reason="Requires LLM mocking — upload endpoint calls real OpenAI")
 async def test_upload_pdf_returns_bill_preview(client: AsyncClient) -> None:
     token = await register_and_login(client, "uploader1", "uploader1@example.com")
@@ -112,6 +114,7 @@ async def test_upload_pdf_returns_bill_preview(client: AsyncClient) -> None:
 # T045-2: Confirm bill preview → persisted BillRead
 # ---------------------------------------------------------------------------
 
+
 async def test_confirm_bill_preview_creates_bill(client: AsyncClient) -> None:
     token = await register_and_login(client, "confirmer1", "confirmer1@example.com")
 
@@ -132,6 +135,7 @@ async def test_confirm_bill_preview_creates_bill(client: AsyncClient) -> None:
 # ---------------------------------------------------------------------------
 # T045-3: GET /bills/ shows bill for correct user
 # ---------------------------------------------------------------------------
+
 
 async def test_list_bills_shows_own_bills(client: AsyncClient) -> None:
     token = await register_and_login(client, "listuser1", "listuser1@example.com")
@@ -160,6 +164,7 @@ async def test_list_bills_shows_own_bills(client: AsyncClient) -> None:
 # ---------------------------------------------------------------------------
 # T045-4: DATA ISOLATION — GET /bills/ as different user never returns other user's bills
 # ---------------------------------------------------------------------------
+
 
 async def test_data_isolation_different_user_cannot_see_bills(client: AsyncClient) -> None:
     """User A's bills must never appear in User B's /bills/ response."""
@@ -198,6 +203,7 @@ async def test_data_isolation_different_user_cannot_see_bills(client: AsyncClien
 # T045-5: DELETE soft-deletes bill → 204; deleted bill absent from listing
 # ---------------------------------------------------------------------------
 
+
 async def test_soft_delete_bill_returns_204_and_absent_from_list(client: AsyncClient) -> None:
     token = await register_and_login(client, "deleteuser1", "deleteuser1@example.com")
 
@@ -229,6 +235,7 @@ async def test_soft_delete_bill_returns_204_and_absent_from_list(client: AsyncCl
 # ---------------------------------------------------------------------------
 # T045-6: Filter by resource_type
 # ---------------------------------------------------------------------------
+
 
 async def test_list_bills_filter_by_resource_type(client: AsyncClient) -> None:
     token = await register_and_login(client, "filteruser1", "filteruser1@example.com")

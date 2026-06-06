@@ -1,24 +1,24 @@
 """Shared pytest fixtures for unit, integration, and quality tests."""
+
 from __future__ import annotations
 
-import io
-import uuid
+# ── Settings override ────────────────────────────────────────────────────────
+# Override settings before any app module is imported so tests never hit
+# real external services or read an .env file from the repo root.
+import os
+from collections.abc import AsyncGenerator
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-# ── Settings override ────────────────────────────────────────────────────────
-# Override settings before any app module is imported so tests never hit
-# real external services or read an .env file from the repo root.
-import os
-
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/test_resource_tracker")
+os.environ.setdefault(
+    "DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/test_resource_tracker"
+)
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-at-least-32-bytes-long-for-tests")
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-fake-key-for-unit-tests-only")
 os.environ.setdefault("UPLOAD_DIR", "/tmp/test-uploads")
@@ -64,26 +64,26 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
 # ── App client fixtures ──────────────────────────────────────────────────────
 
+
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """HTTPX async client wired to the FastAPI app with DB override."""
-    from app.main import app  # type: ignore[import]
     from app.core.database import get_db  # type: ignore[import]
+    from app.main import app  # type: ignore[import]
 
     async def override_get_db():  # type: ignore[return]
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
 
 
 # ── Domain data factories ────────────────────────────────────────────────────
+
 
 def make_user_data(
     username: str = "testuser",
@@ -158,6 +158,7 @@ def make_synthetic_pdf() -> bytes:
 
 
 # ── OpenAI mock helpers ──────────────────────────────────────────────────────
+
 
 def make_openai_parse_response(bill_data: dict | None = None) -> MagicMock:
     """Build a mock OpenAI ChatCompletion response that returns bill JSON."""

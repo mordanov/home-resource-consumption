@@ -5,15 +5,17 @@ Revises:
 Create Date: 2026-06-05 00:00:00.000000
 
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "20260605_initial_schema"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -90,12 +92,8 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
         ),
         sa.Column("horizon_months", sa.Integer(), nullable=False),
-        sa.Column(
-            "predicted_consumption", sa.Numeric(precision=12, scale=4), nullable=False
-        ),
-        sa.Column(
-            "predicted_cost", sa.Numeric(precision=12, scale=4), nullable=False
-        ),
+        sa.Column("predicted_consumption", sa.Numeric(precision=12, scale=4), nullable=False),
+        sa.Column("predicted_cost", sa.Numeric(precision=12, scale=4), nullable=False),
         sa.Column(
             "confidence_interval_lower",
             sa.Numeric(precision=12, scale=4),
@@ -125,9 +123,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.UUID(), nullable=False),
         sa.Column("token_hash", sa.String(length=255), nullable=False),
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=False),
-        sa.Column(
-            "revoked", sa.Boolean(), nullable=False, server_default="false"
-        ),
+        sa.Column("revoked", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column(
             "created_at",
             sa.TIMESTAMP(timezone=True),

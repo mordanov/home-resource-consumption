@@ -28,6 +28,7 @@ class PaginatedResponse[T](BaseModel):
 
 # ── User ──────────────────────────────────────────────────────────────────────
 
+
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=64, pattern=r"^[a-zA-Z0-9_-]+$")
     email: EmailStr
@@ -55,6 +56,7 @@ class UserRead(UserBase):
 
 
 # ── Bill ──────────────────────────────────────────────────────────────────────
+
 
 class BillBase(BaseModel):
     resource_type: ResourceType
@@ -98,6 +100,7 @@ class BillPreview(BillBase):
 
 # ── Prediction ────────────────────────────────────────────────────────────────
 
+
 class PredictionRead(BaseModel):
     id: UUID
     user_id: UUID
@@ -116,6 +119,7 @@ class PredictionRead(BaseModel):
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -128,6 +132,7 @@ class LoginRequest(BaseModel):
 
 
 # ── Analytics ─────────────────────────────────────────────────────────────────
+
 
 class MonthlyDataPoint(BaseModel):
     month: str

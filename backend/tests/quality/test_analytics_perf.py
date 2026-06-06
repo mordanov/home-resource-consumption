@@ -5,12 +5,12 @@ completes in < 200ms for up to 100 bills.
 
 Run with: pytest tests/quality/test_analytics_perf.py --benchmark-only
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -19,6 +19,7 @@ import pytest
 def _import_analytics_service():
     try:
         from app.services.analytics_service import AnalyticsService  # type: ignore[import]
+
         return AnalyticsService
     except ModuleNotFoundError:
         pytest.skip("AnalyticsService not yet implemented")
@@ -44,12 +45,13 @@ def _make_100_monthly_rows() -> list:
 # T063: Benchmark — 100 bills query completes in < 200ms
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.skip(reason="Requires AnalyticsService implementation — run after backend completes")
 def test_analytics_summary_under_200ms(benchmark) -> None:
     """AnalyticsService.get_summary must respond in < 200ms for 100 bills."""
     import asyncio
 
-    AnalyticsService = _import_analytics_service()
+    analytics_service_cls = _import_analytics_service()
 
     rows = _make_100_monthly_rows()
     mock_session = MagicMock()
@@ -57,7 +59,7 @@ def test_analytics_summary_under_200ms(benchmark) -> None:
     mock_result.fetchall = MagicMock(return_value=rows)
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    service = AnalyticsService(db=mock_session)
+    service = analytics_service_cls(db=mock_session)
     user_id = uuid.uuid4()
 
     async def run_summary():

@@ -13,7 +13,12 @@ from app.services.ml.feature_engineering import build_features
 MIN_BILLS = 3
 MODEL_VERSION = "linear_regression_v1"
 _FEATURE_COLS = [
-    "sin_month", "cos_month", "period_days", "price_per_unit", "lag_1", "lag_2",
+    "sin_month",
+    "cos_month",
+    "period_days",
+    "price_per_unit",
+    "lag_1",
+    "lag_2",
 ]
 
 _NDArray = np.ndarray[Any, np.dtype[Any]]
@@ -43,8 +48,7 @@ class _ModelPredictor:
     def predict_with_ci(self, features: _NDArray) -> tuple[float, float, float]:
         central = float(self._trainer.predict(features)[0])
         bootstrapped = [
-            central + float(np.random.choice(self._residuals))
-            for _ in range(self.N_RESAMPLES)
+            central + float(np.random.choice(self._residuals)) for _ in range(self.N_RESAMPLES)
         ]
         lower = float(np.quantile(bootstrapped, self.CI_QUANTILE))
         upper = float(np.quantile(bootstrapped, 1 - self.CI_QUANTILE))

@@ -8,16 +8,13 @@ rigour-labs/mcp quality gate:
 These tests run against the live Docker Compose stack.
 Run with: pytest tests/quality/test_docker_compose.py
 """
+
 from __future__ import annotations
 
 import os
-import subprocess
-import sys
-import time
 
-import pytest
 import httpx
-
+import pytest
 
 BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", "http://localhost:8000")
 
@@ -25,6 +22,7 @@ BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", "http://localhost:8000")
 # ---------------------------------------------------------------------------
 # T086-1: OpenAPI docs endpoint returns 200
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.skip(reason="Requires Docker Compose stack running — run manually")
 def test_openapi_docs_accessible() -> None:
@@ -40,6 +38,7 @@ def test_openapi_docs_accessible() -> None:
 # T086-2: Health endpoint returns 200 {"status": "ok"}
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.skip(reason="Requires Docker Compose stack running — run manually")
 def test_health_endpoint() -> None:
     resp = httpx.get(f"{BACKEND_BASE_URL}/api/v1/health", timeout=10.0)
@@ -50,6 +49,7 @@ def test_health_endpoint() -> None:
 # ---------------------------------------------------------------------------
 # T086-3: All service paths are present in OpenAPI spec
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.skip(reason="Requires Docker Compose stack running — run manually")
 def test_all_required_api_paths_present_in_openapi() -> None:

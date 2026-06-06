@@ -8,22 +8,19 @@ FR-0 verification:
 - hashed_password never appears in any register or login response
 - AuthService imports nothing from BillService, ExportService, or AnalyticsService
 """
+
 from __future__ import annotations
 
-import importlib
-import inspect
-import sys
-import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Import guard: AuthService must have zero cross-service imports
 # ---------------------------------------------------------------------------
+
 
 def test_auth_service_has_no_cross_service_imports() -> None:
     """AuthService source must not import BillService, ExportService, or AnalyticsService."""
@@ -35,28 +32,37 @@ def test_auth_service_has_no_cross_service_imports() -> None:
         pytest.skip("auth_service.py not yet implemented")
 
     tree = ast.parse(service_path.read_text())
-    forbidden = {"BillService", "ExportService", "AnalyticsService",
-                 "bill_service", "export_service", "analytics_service"}
+    forbidden = {
+        "BillService",
+        "ExportService",
+        "AnalyticsService",
+        "bill_service",
+        "export_service",
+        "analytics_service",
+    }
     violations: list[str] = []
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             for alias in node.names:
-                if alias.name in forbidden or (node.module and any(f in node.module for f in forbidden)):
+                if alias.name in forbidden or (
+                    node.module and any(f in node.module for f in forbidden)
+                ):
                     violations.append(f"line {node.lineno}: {ast.unparse(node)}")
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 if any(f in alias.name for f in forbidden):
                     violations.append(f"line {node.lineno}: {ast.unparse(node)}")
 
-    assert not violations, (
-        f"AuthService has forbidden cross-service imports:\n" + "\n".join(violations)
+    assert not violations, "AuthService has forbidden cross-service imports:\n" + "\n".join(
+        violations
     )
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_user_repo() -> MagicMock:
@@ -104,6 +110,7 @@ def _make_user_orm(
         if _CACHED_HASH is None:
             try:
                 from app.core.security import hash_password  # type: ignore[import]
+
                 _CACHED_HASH = hash_password("CorrectPass1!")
             except ModuleNotFoundError:
                 _CACHED_HASH = "$2b$12$abcdefghijklmnopqrstuuVGhz3J.4K2bFVaFHJp6H0rDwVBRBf7i"
@@ -122,10 +129,9 @@ def _make_user_orm(
 # T026-1: register with duplicate username → ConflictError
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_register_duplicate_username_raises_conflict(
-    mock_user_repo, mock_token_repo
-) -> None:
+async def test_register_duplicate_username_raises_conflict(mock_user_repo, mock_token_repo) -> None:
     existing_user = _make_user_orm()
     mock_user_repo.get_by_username = AsyncMock(return_value=existing_user)
 
@@ -148,10 +154,9 @@ async def test_register_duplicate_username_raises_conflict(
 # T026-2: register with duplicate email → ConflictError
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_register_duplicate_email_raises_conflict(
-    mock_user_repo, mock_token_repo
-) -> None:
+async def test_register_duplicate_email_raises_conflict(mock_user_repo, mock_token_repo) -> None:
     mock_user_repo.get_by_username = AsyncMock(return_value=None)
     existing_user = _make_user_orm()
     mock_user_repo.get_by_email = AsyncMock(return_value=existing_user)
@@ -175,10 +180,9 @@ async def test_register_duplicate_email_raises_conflict(
 # T026-3: login with wrong password → UnauthorizedError
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_login_wrong_password_raises_unauthorized(
-    mock_user_repo, mock_token_repo
-) -> None:
+async def test_login_wrong_password_raises_unauthorized(mock_user_repo, mock_token_repo) -> None:
     # Use a valid bcrypt hash for "CorrectPass1!" — wrong password won't match
     existing_user = _make_user_orm()  # uses hashed "CorrectPass1!"
     mock_user_repo.get_by_username = AsyncMock(return_value=existing_user)
@@ -198,10 +202,9 @@ async def test_login_wrong_password_raises_unauthorized(
 # T026-4: login with correct password returns token pair without hashed_password
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_login_correct_password_returns_token_pair(
-    mock_user_repo, mock_token_repo
-) -> None:
+async def test_login_correct_password_returns_token_pair(mock_user_repo, mock_token_repo) -> None:
     try:
         from app.core.security import hash_password  # type: ignore[import]
     except ModuleNotFoundError:
@@ -220,8 +223,10 @@ async def test_login_correct_password_returns_token_pair(
     # Result is tuple[access_token, refresh_token] or a response object
     if isinstance(result, tuple):
         access_token, refresh_token = result
-        assert isinstance(access_token, str) and len(access_token) > 10
-        assert isinstance(refresh_token, str) and len(refresh_token) > 10
+        assert isinstance(access_token, str)
+        assert len(access_token) > 10
+        assert isinstance(refresh_token, str)
+        assert len(refresh_token) > 10
     else:
         # Response object — must have access_token attribute
         assert hasattr(result, "access_token")
@@ -232,26 +237,25 @@ async def test_login_correct_password_returns_token_pair(
 # T026-5: hashed_password never returned from register
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_register_response_excludes_hashed_password(
-    mock_user_repo, mock_token_repo
-) -> None:
+async def test_register_response_excludes_hashed_password(mock_user_repo, mock_token_repo) -> None:
     import uuid as _uuid
-    from datetime import datetime as _dt, timezone as _tz
-    from app.domain.models import User  # type: ignore[import]
-    # AuthService creates a User and calls user_repo.create(user) without capturing return value.
+    from datetime import datetime as _dt
+
+    # AuthService creates a User and calls user_repo.create(user) without capturing the return.
     # It then calls UserRead.model_validate(user) on the original user object.
     # The User.id defaults (SQLAlchemy column default) are not set until DB flush.
-    # This is a real bug (BUG-002): AuthService should use the returned user from create().
-    # Test adapted to verify the hashed_password exclusion contract only, using a proper User fixture.
+    # BUG-002: AuthService should use the returned user from create().
+    # Test adapted to verify the hashed_password exclusion contract only.
     new_user = MagicMock()
     new_user.id = _uuid.uuid4()
     new_user.username = "brand_new"
     new_user.email = "brandnew@example.com"
     new_user.hashed_password = "$2b$12$abcdefghijklmnopqrstuuVGhz3J.4K2bFVaFHJp6H0rDwVBRBf7i"
     new_user.is_active = True
-    new_user.created_at = _dt.now(_tz.utc)
-    new_user.updated_at = _dt.now(_tz.utc)
+    new_user.created_at = _dt.now(UTC)
+    new_user.updated_at = _dt.now(UTC)
     # Patch UserRead.model_validate to use our mock directly
     mock_user_repo.get_by_username = AsyncMock(return_value=None)
     mock_user_repo.get_by_email = AsyncMock(return_value=None)
@@ -261,14 +265,19 @@ async def test_register_response_excludes_hashed_password(
 
     try:
         from app.domain.schemas import UserRead  # type: ignore[import]
+
         # Patch UserRead.model_validate to return a proper schema from our mock
-        with patch.object(UserRead, "model_validate", return_value=UserRead(
-            id=new_user.id,
-            username="brand_new",
-            email="brandnew@example.com",
-            is_active=True,
-            created_at=new_user.created_at,
-        )) as mock_validate:
+        with patch.object(
+            UserRead,
+            "model_validate",
+            return_value=UserRead(
+                id=new_user.id,
+                username="brand_new",
+                email="brandnew@example.com",
+                is_active=True,
+                created_at=new_user.created_at,
+            ),
+        ):
             result = await service.register(
                 username="brand_new",
                 email="brandnew@example.com",
@@ -295,9 +304,13 @@ async def test_register_response_excludes_hashed_password(
 # T026-6: expired access token decoded → raises exception
 # ---------------------------------------------------------------------------
 
+
 def test_expired_access_token_raises() -> None:
     try:
-        from app.core.security import create_access_token, decode_access_token  # type: ignore[import]
+        from app.core.security import (  # type: ignore[import]
+            create_access_token,
+            decode_access_token,
+        )
     except ModuleNotFoundError:
         pytest.skip("security module not yet implemented")
 
@@ -311,7 +324,7 @@ def test_expired_access_token_raises() -> None:
         except Exception:
             pytest.skip("Cannot create expired token with current implementation")
 
-    with pytest.raises(Exception):  # jose.JWTError or similar
+    with pytest.raises(Exception, match=r"."):  # jose.JWTError or similar
         decode_access_token(token)
 
 
@@ -319,10 +332,9 @@ def test_expired_access_token_raises() -> None:
 # T026-7: refresh token rotation revokes old token
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-async def test_refresh_rotation_revokes_old_token(
-    mock_user_repo, mock_token_repo
-) -> None:
+async def test_refresh_rotation_revokes_old_token(mock_user_repo, mock_token_repo) -> None:
     old_raw_token = "old-raw-refresh-token-value-abc123"
     user_id = uuid.uuid4()
 
@@ -331,16 +343,18 @@ async def test_refresh_rotation_revokes_old_token(
 
     try:
         from app.core.security import hash_refresh_token  # type: ignore[import]
+
         old_hash = hash_refresh_token(old_raw_token)
     except ModuleNotFoundError:
         import hashlib
+
         old_hash = hashlib.sha256(old_raw_token.encode()).hexdigest()
 
     mock_refresh_token = MagicMock()
     mock_refresh_token.user_id = user_id
     mock_refresh_token.token_hash = old_hash
     mock_refresh_token.revoked = False
-    mock_refresh_token.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    mock_refresh_token.expires_at = datetime.now(UTC) + timedelta(days=7)
 
     mock_token_repo.get_valid = AsyncMock(return_value=mock_refresh_token)
     mock_token_repo.revoke = AsyncMock()

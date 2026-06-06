@@ -16,9 +16,7 @@ from app.repositories.user_repository import UserRepository
 
 
 class AuthService:
-    def __init__(
-        self, user_repo: UserRepository, token_repo: TokenRepository
-    ) -> None:
+    def __init__(self, user_repo: UserRepository, token_repo: TokenRepository) -> None:
         self.user_repo = user_repo
         self.token_repo = token_repo
 

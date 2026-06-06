@@ -6,13 +6,13 @@ FR-6 verification:
 - Empty arrays returned when no bills exist (not errors)
 - GET /analytics/summary responds in < 200ms for 100 bills (quality gate)
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -20,6 +20,7 @@ import pytest
 def _import_analytics_service():
     try:
         from app.services.analytics_service import AnalyticsService  # type: ignore[import]
+
         return AnalyticsService
     except ModuleNotFoundError:
         pytest.skip("AnalyticsService not yet implemented")
@@ -31,7 +32,9 @@ def _make_mock_db_session() -> MagicMock:
     return session
 
 
-def _make_monthly_row(month: str, resource_type: str, total_consumed: float, total_paid: float) -> MagicMock:
+def _make_monthly_row(
+    month: str, resource_type: str, total_consumed: float, total_paid: float
+) -> MagicMock:
     """Build a mock DB row for monthly aggregation."""
     row = MagicMock()
     row.month = month
@@ -52,12 +55,14 @@ def _seeded_monthly_rows(
     for i in range(n_months):
         month_date = start + timedelta(days=i * 30)
         month_str = month_date.strftime("%Y-%m")
-        rows.append(_make_monthly_row(
-            month=month_str,
-            resource_type=resource_type,
-            total_consumed=base_consumption + i * increment,
-            total_paid=45.0 + i * 2,
-        ))
+        rows.append(
+            _make_monthly_row(
+                month=month_str,
+                resource_type=resource_type,
+                total_consumed=base_consumption + i * increment,
+                total_paid=45.0 + i * 2,
+            )
+        )
     return rows
 
 
@@ -65,9 +70,10 @@ def _seeded_monthly_rows(
 # T062-1: 12-month seeded dataset → monthly_consumption has 12 entries
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_monthly_consumption_has_12_entries_for_12_month_seed() -> None:
-    AnalyticsService = _import_analytics_service()
+    analytics_service_cls = _import_analytics_service()
 
     monthly_rows = _seeded_monthly_rows(n_months=12)
     mock_session = _make_mock_db_session()
@@ -77,7 +83,7 @@ async def test_monthly_consumption_has_12_entries_for_12_month_seed() -> None:
     mock_result.fetchall = MagicMock(return_value=monthly_rows)
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    service = AnalyticsService(db=mock_session)
+    service = analytics_service_cls(db=mock_session)
     user_id = uuid.uuid4()
 
     try:
@@ -100,16 +106,17 @@ async def test_monthly_consumption_has_12_entries_for_12_month_seed() -> None:
 # T062-2: Empty arrays returned when no bills (not errors)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_empty_arrays_returned_when_no_bills() -> None:
-    AnalyticsService = _import_analytics_service()
+    analytics_service_cls = _import_analytics_service()
 
     mock_session = _make_mock_db_session()
     mock_result = MagicMock()
     mock_result.fetchall = MagicMock(return_value=[])
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    service = AnalyticsService(db=mock_session)
+    service = analytics_service_cls(db=mock_session)
     user_id = uuid.uuid4()
 
     try:
@@ -134,6 +141,7 @@ async def test_empty_arrays_returned_when_no_bills() -> None:
 # T062-3: year_over_year.change_pct is correct for known dataset
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_year_over_year_change_pct_correct_for_known_dataset() -> None:
     """
@@ -141,15 +149,15 @@ async def test_year_over_year_change_pct_correct_for_known_dataset() -> None:
     Year 2: 12 months at 150 kWh each = 1800 total.
     Expected change_pct: (1800 - 1200) / 1200 * 100 = 50.0%
     """
-    AnalyticsService = _import_analytics_service()
+    analytics_service_cls = _import_analytics_service()
 
     # Build rows for two years
     today = date.today()
     yoy_rows: list = []
 
     year_data = {
-        today.year - 1: 100.0,   # previous year
-        today.year: 150.0,        # current year
+        today.year - 1: 100.0,  # previous year
+        today.year: 150.0,  # current year
     }
 
     for year, consumption in year_data.items():
@@ -169,7 +177,7 @@ async def test_year_over_year_change_pct_correct_for_known_dataset() -> None:
     mock_result.fetchall = MagicMock(return_value=yoy_rows)
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    service = AnalyticsService(db=mock_session)
+    service = analytics_service_cls(db=mock_session)
     user_id = uuid.uuid4()
 
     try:

@@ -8,10 +8,10 @@ Env-var usage (e.g. on container startup via DEFAULT_USER_* vars):
     DEFAULT_USER_USERNAME=alice DEFAULT_USER_EMAIL=alice@example.com DEFAULT_USER_PASSWORD=secret \\
         python scripts/create_user.py
 """
+
 import argparse
 import asyncio
 import os
-import sys
 from datetime import UTC, datetime
 
 from app.core.database import AsyncSessionLocal

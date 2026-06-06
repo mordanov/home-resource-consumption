@@ -37,9 +37,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if len(settings.JWT_SECRET_KEY.encode()) < 32:
         raise RuntimeError(
             "JWT_SECRET_KEY must be at least 256 bits (32 bytes). "
-            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            'Generate one with: python -c "import secrets; print(secrets.token_hex(32))"'
         )
     import subprocess
+
     subprocess.run(["alembic", "upgrade", "head"], check=True)
     logger.info("database.migrated")
     yield
@@ -66,6 +67,7 @@ async def request_id_middleware(request: Request, call_next: object) -> object:
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id, path=request.url.path)
     from starlette.responses import Response
+
     response: Response = await call_next(request)  # type: ignore[operator]
     response.headers["X-Request-ID"] = request_id
     return response
@@ -100,9 +102,7 @@ async def forbidden_handler(request: Request, exc: ForbiddenError) -> JSONRespon
 
 
 @app.exception_handler(InsufficientDataError)
-async def insufficient_data_handler(
-    request: Request, exc: InsufficientDataError
-) -> JSONResponse:
+async def insufficient_data_handler(request: Request, exc: InsufficientDataError) -> JSONResponse:
     return JSONResponse(
         status_code=409,
         content={
