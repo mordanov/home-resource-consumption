@@ -11,8 +11,6 @@ interface PredictionRead {
   predicted_cost: string
   confidence_interval_lower: string
   confidence_interval_upper: string
-  unit: string
-  currency: string
   model_version: string
 }
 
@@ -43,10 +41,10 @@ export function PredictionCard({ resourceType, horizon }: Props) {
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.predictions.byResource(resourceType, horizon),
     queryFn: async () => {
-      const res = await axiosInstance.get<PredictionRead>(
+      const res = await axiosInstance.get<PredictionRead[]>(
         `/predictions/${resourceType}?horizon=${horizon}`,
       )
-      return res.data
+      return res.data[0] ?? null
     },
     retry: false,
   })
@@ -86,20 +84,19 @@ export function PredictionCard({ resourceType, horizon }: Props) {
             <div>
               <p style={{ fontSize: '0.75rem', color: '#687076', margin: 0 }}>{t('predictions.predictedConsumption')}</p>
               <p style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
-                {Number(data.predicted_consumption).toFixed(1)} {data.unit}
+                {Number(data.predicted_consumption).toFixed(1)}
               </p>
               <p style={{ fontSize: '0.75rem', color: '#687076', margin: 0 }}>
                 {t('predictions.range', {
                   lower: Number(data.confidence_interval_lower).toFixed(1),
                   upper: Number(data.confidence_interval_upper).toFixed(1),
-                  unit: data.unit,
                 })}
               </p>
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: '#687076', margin: 0 }}>{t('predictions.predictedCost')}</p>
               <p style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>
-                {Number(data.predicted_cost).toFixed(2)} {data.currency}
+                {Number(data.predicted_cost).toFixed(2)}
               </p>
             </div>
             <p style={{ fontSize: '0.7rem', color: '#a1a1aa', margin: 0 }}>

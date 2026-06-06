@@ -140,7 +140,7 @@
   "predictions.needMore": "Upload {{count}} more bill{{plural}} to enable predictions.",
   "predictions.needAtLeast": "Upload at least 3 bills to enable predictions.",
   "predictions.predictedConsumption": "Predicted consumption",
-  "predictions.range": "Range: {{lower}} – {{upper}} {{unit}}",
+  "predictions.range": "Range: {{lower}} – {{upper}}",
   "predictions.predictedCost": "Predicted cost",
   "predictions.model": "Model: {{version}}",
   "predictions.loadError": "Could not load prediction. Please try again.",

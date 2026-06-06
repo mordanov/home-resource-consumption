@@ -140,7 +140,7 @@
   "predictions.needMore": "Sube {{count}} factura{{plural}} más para activar las predicciones.",
   "predictions.needAtLeast": "Sube al menos 3 facturas para activar las predicciones.",
   "predictions.predictedConsumption": "Consumo previsto",
-  "predictions.range": "Rango: {{lower}} – {{upper}} {{unit}}",
+  "predictions.range": "Rango: {{lower}} – {{upper}}",
   "predictions.predictedCost": "Coste previsto",
   "predictions.model": "Modelo: {{version}}",
   "predictions.loadError": "No se pudo cargar la predicción. Inténtalo de nuevo.",

@@ -73,12 +73,17 @@ export function DashboardPage() {
     },
   })
 
-  const chartData = analytics?.monthly_consumption?.map((item) => ({
-    month: item.month,
-    electricity: item.ELECTRICITY,
-    gas: item.GAS,
-    water: item.WATER,
-  })) ?? []
+  // API returns flat [{month, resource_type, value}] — pivot to {month, ELECTRICITY?, GAS?, WATER?}
+  const pivoted = new Map<string, { month: string; electricity?: number; gas?: number; water?: number }>()
+  for (const pt of analytics?.monthly_consumption ?? []) {
+    if (!pivoted.has(pt.month)) pivoted.set(pt.month, { month: pt.month })
+    const entry = pivoted.get(pt.month)!
+    const v = Number(pt.value)
+    if (pt.resource_type === 'ELECTRICITY') entry.electricity = v
+    else if (pt.resource_type === 'GAS') entry.gas = v
+    else if (pt.resource_type === 'WATER') entry.water = v
+  }
+  const chartData = [...pivoted.values()].sort((a, b) => a.month.localeCompare(b.month))
 
   return (
     <div>

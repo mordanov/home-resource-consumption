@@ -140,7 +140,7 @@
   "predictions.needMore": "Загрузите ещё {{count}} счёт{{plural}} для прогнозирования.",
   "predictions.needAtLeast": "Загрузите не менее 3 счетов для прогнозирования.",
   "predictions.predictedConsumption": "Прогнозируемое потребление",
-  "predictions.range": "Диапазон: {{lower}} – {{upper}} {{unit}}",
+  "predictions.range": "Диапазон: {{lower}} – {{upper}}",
   "predictions.predictedCost": "Прогнозируемая стоимость",
   "predictions.model": "Модель: {{version}}",
   "predictions.loadError": "Не удалось загрузить прогноз. Попробуйте ещё раз.",

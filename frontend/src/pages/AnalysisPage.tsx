@@ -12,13 +12,69 @@ import { ExportModal } from '../components/ExportModal'
 import axiosInstance from '../lib/axios'
 import { queryKeys } from '../lib/queryKeys'
 
+// Raw shapes returned by the API (Decimal fields serialized as strings by Pydantic)
+interface MonthlyDataPointRaw {
+  month: string
+  resource_type: string
+  value: string
+}
+interface YoYPointRaw {
+  resource_type: string
+  current_year: string
+  previous_year: string
+  change_pct: string | null
+}
+interface CumulativeCostPointRaw {
+  month: string
+  resource_type: string
+  cumulative_cost: string
+}
+
 export interface AnalyticsSummary {
-  monthly_consumption: Array<{ month: string; ELECTRICITY?: number; GAS?: number; WATER?: number }>
-  monthly_cost: Array<{ month: string; ELECTRICITY?: number; GAS?: number; WATER?: number }>
-  price_per_unit: Array<{ month: string; ELECTRICITY?: number; GAS?: number; WATER?: number }>
-  year_over_year: Array<{ resource_type: string; current_year: number; previous_year: number; change_pct: number }>
-  cumulative_cost_ytd: Array<{ month: string; cumulative_cost: number }>
-  consumption_heatmap: Record<string, Array<{ month: string; value: number }>>
+  monthly_consumption: MonthlyDataPointRaw[]
+  monthly_cost: MonthlyDataPointRaw[]
+  price_per_unit: MonthlyDataPointRaw[]
+  year_over_year: YoYPointRaw[]
+  cumulative_cost_ytd: CumulativeCostPointRaw[]
+}
+
+type PivotedPoint = { month: string; ELECTRICITY?: number; GAS?: number; WATER?: number }
+
+function pivotMonthly(pts: MonthlyDataPointRaw[]): PivotedPoint[] {
+  const map = new Map<string, PivotedPoint>()
+  for (const pt of pts) {
+    if (!map.has(pt.month)) map.set(pt.month, { month: pt.month })
+    ;(map.get(pt.month) as Record<string, unknown>)[pt.resource_type] = Number(pt.value)
+  }
+  return [...map.values()].sort((a, b) => a.month.localeCompare(b.month))
+}
+
+function transformYoY(pts: YoYPointRaw[]) {
+  return pts.map((p) => ({
+    resource_type: p.resource_type,
+    current_year: Number(p.current_year),
+    previous_year: Number(p.previous_year),
+    change_pct: p.change_pct != null ? Number(p.change_pct) : 0,
+  }))
+}
+
+function aggregateCumulative(pts: CumulativeCostPointRaw[]) {
+  const map = new Map<string, number>()
+  for (const pt of pts) {
+    map.set(pt.month, (map.get(pt.month) ?? 0) + Number(pt.cumulative_cost))
+  }
+  return [...map.entries()]
+    .map(([month, cumulative_cost]) => ({ month, cumulative_cost }))
+    .sort((a, b) => a.month.localeCompare(b.month))
+}
+
+function buildHeatmap(pts: MonthlyDataPointRaw[]): Record<string, Array<{ month: string; value: number }>> {
+  const map: Record<string, Array<{ month: string; value: number }>> = {}
+  for (const pt of pts) {
+    if (!map[pt.resource_type]) map[pt.resource_type] = []
+    map[pt.resource_type].push({ month: pt.month, value: Number(pt.value) })
+  }
+  return map
 }
 
 type ResourceFilter = 'ALL' | 'ELECTRICITY' | 'GAS' | 'WATER'
@@ -110,32 +166,32 @@ export function AnalysisPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: 24 }}>
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.trendTitle')}</h2></CardHeader>
-            <CardBody><ConsumptionTrendChart data={data?.monthly_consumption ?? []} /></CardBody>
+            <CardBody><ConsumptionTrendChart data={pivotMonthly(data?.monthly_consumption ?? [])} /></CardBody>
           </Card>
 
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.costTitle')}</h2></CardHeader>
-            <CardBody><MonthlyCostChart data={data?.monthly_cost ?? []} /></CardBody>
+            <CardBody><MonthlyCostChart data={pivotMonthly(data?.monthly_cost ?? [])} /></CardBody>
           </Card>
 
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.priceTitle')}</h2></CardHeader>
-            <CardBody><PricePerUnitChart data={data?.price_per_unit ?? []} /></CardBody>
+            <CardBody><PricePerUnitChart data={pivotMonthly(data?.price_per_unit ?? [])} /></CardBody>
           </Card>
 
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.yoyTitle')}</h2></CardHeader>
-            <CardBody><YearOverYearChart data={data?.year_over_year ?? []} /></CardBody>
+            <CardBody><YearOverYearChart data={transformYoY(data?.year_over_year ?? [])} /></CardBody>
           </Card>
 
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.cumulativeTitle')}</h2></CardHeader>
-            <CardBody><CumulativeCostChart data={data?.cumulative_cost_ytd ?? []} /></CardBody>
+            <CardBody><CumulativeCostChart data={aggregateCumulative(data?.cumulative_cost_ytd ?? [])} /></CardBody>
           </Card>
 
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.heatmapTitle')}</h2></CardHeader>
-            <CardBody><ConsumptionHeatmap data={data?.consumption_heatmap ?? {}} /></CardBody>
+            <CardBody><ConsumptionHeatmap data={data ? buildHeatmap(data.monthly_consumption) : {}} /></CardBody>
           </Card>
         </div>
       )}
