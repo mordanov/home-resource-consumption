@@ -32,6 +32,7 @@ class Settings(BaseSettings):
             return ["http://localhost:3000", "http://localhost"]
         if raw.startswith("["):
             import json
+
             return list(json.loads(raw))
         return [o.strip() for o in raw.split(",") if o.strip()]
 
