@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
 
     DATABASE_URL: str = "postgresql+asyncpg://resource_user:resource_pass@db:5432/resource_tracker"
     OPENAI_API_KEY: str = ""
