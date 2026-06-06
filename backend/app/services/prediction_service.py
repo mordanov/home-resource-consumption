@@ -33,11 +33,33 @@ class PredictionService:
         self,
         bill_repo: BillRepository,
         prediction_repo: PredictionRepository,
-        predictor: BasePredictor,
     ) -> None:
         self.bill_repo = bill_repo
         self.prediction_repo = prediction_repo
-        self.predictor = predictor
+
+    async def _save_prediction(
+        self,
+        predictor: BasePredictor,
+        user_id: UUID,
+        resource_type: ResourceType,
+        horizon_months: int,
+        now: datetime,
+    ) -> PredictionRead:
+        r = predictor.predict(horizon_months)
+        pred = Prediction(
+            user_id=user_id,
+            resource_type=resource_type.value,
+            generated_at=now,
+            horizon_months=horizon_months,
+            predicted_consumption=float(r.predicted_consumption),
+            predicted_cost=float(r.predicted_cost),
+            confidence_interval_lower=float(r.confidence_interval_lower),
+            confidence_interval_upper=float(r.confidence_interval_upper),
+            model_version=r.model_version,
+            created_at=now,
+        )
+        await self.prediction_repo.create_prediction(pred)
+        return PredictionRead.model_validate(pred)
 
     async def predict(
         self,
@@ -56,21 +78,7 @@ class PredictionService:
         predictor = _build_predictor(model, ci_quantile, n_resamples, window, alpha)
         predictor.fit(bills)
         now = datetime.now(UTC)
-        saved = []
-        for h in range(1, horizon + 1):
-            r = predictor.predict(h)
-            pred = Prediction(
-                user_id=user_id,
-                resource_type=resource_type.value,
-                generated_at=now,
-                horizon_months=h,
-                predicted_consumption=float(r.predicted_consumption),
-                predicted_cost=float(r.predicted_cost),
-                confidence_interval_lower=float(r.confidence_interval_lower),
-                confidence_interval_upper=float(r.confidence_interval_upper),
-                model_version=r.model_version,
-                created_at=now,
-            )
-            await self.prediction_repo.create_prediction(pred)
-            saved.append(PredictionRead.model_validate(pred))
-        return saved
+        return [
+            await self._save_prediction(predictor, user_id, resource_type, h, now)
+            for h in range(1, horizon + 1)
+        ]

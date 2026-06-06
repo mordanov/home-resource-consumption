@@ -13,7 +13,6 @@ from app.repositories.user_repository import UserRepository
 from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import AuthService
 from app.services.bill_service import BillService
-from app.services.ml.predictor import LinearRegressionPredictor
 from app.services.parser.parser_factory import ParserFactory
 from app.services.prediction_service import PredictionService
 
@@ -40,8 +39,7 @@ def get_bill_service(db: AsyncSession = Depends(get_db)) -> BillService:
 
 
 def get_prediction_service(db: AsyncSession = Depends(get_db)) -> PredictionService:
-    predictor = LinearRegressionPredictor()
-    return PredictionService(BillRepository(db), PredictionRepository(db), predictor)
+    return PredictionService(BillRepository(db), PredictionRepository(db))
 
 
 def get_analytics_service(db: AsyncSession = Depends(get_db)) -> AnalyticsService:

@@ -111,9 +111,8 @@ async def test_prediction_service_raises_insufficient_data_when_fewer_than_3_bil
     bill_repo = MagicMock()
     bill_repo.list_for_user_and_type = AsyncMock(return_value=[_make_mock_bill(date.today())])
     prediction_repo = MagicMock()
-    predictor = MagicMock()
 
-    service = PredictionService(bill_repo, prediction_repo, predictor)
+    service = PredictionService(bill_repo, prediction_repo)
 
     with pytest.raises(InsufficientDataError) as exc_info:
         await service.predict(uuid.uuid4(), ResourceType.ELECTRICITY, horizon=1)
@@ -140,9 +139,10 @@ async def test_prediction_service_returns_predictions_for_each_horizon() -> None
     predictor.fit = MagicMock()
     predictor.predict = MagicMock(side_effect=_make_prediction_result)
 
-    service = PredictionService(bill_repo, prediction_repo, predictor)
+    service = PredictionService(bill_repo, prediction_repo)
 
-    with patch("app.services.prediction_service.PredictionRead.model_validate") as mock_validate:
+    with patch("app.services.prediction_service._build_predictor", return_value=predictor), \
+         patch("app.services.prediction_service.PredictionRead.model_validate") as mock_validate:
         mock_validate.return_value = MagicMock()
         results = await service.predict(uuid.uuid4(), ResourceType.ELECTRICITY, horizon=3)
 
