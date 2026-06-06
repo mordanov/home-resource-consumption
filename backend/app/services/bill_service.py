@@ -107,11 +107,11 @@ class BillService:
         if data.resource_type is not None:
             bill.resource_type = data.resource_type.value
         if data.bill_date is not None:
-            bill.bill_date = data.bill_date
+            bill.bill_date = data.bill_date  # type: ignore[assignment]
         if data.period_start is not None:
-            bill.period_start = data.period_start
+            bill.period_start = data.period_start  # type: ignore[assignment]
         if data.period_end is not None:
-            bill.period_end = data.period_end
+            bill.period_end = data.period_end  # type: ignore[assignment]
         if data.amount_consumed is not None:
             bill.amount_consumed = float(data.amount_consumed)
         if data.unit is not None:
