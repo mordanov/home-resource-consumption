@@ -50,14 +50,20 @@ function exportPng(ref: React.RefObject<HTMLDivElement | null>, filename: string
 
 export function MonthlyYoYChart({ data }: Props) {
   const [mode, setMode] = useState<Mode>('consumption')
-  const [resource, setResource] = useState<Resource>('ELECTRICITY')
+  const availableResources = (['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).filter(
+    (r) => data.some((d) => d.resource_type === r),
+  )
+  const [resource, setResource] = useState<Resource>(
+    () => availableResources[0] ?? 'ELECTRICITY',
+  )
   const ref = useRef<HTMLDivElement>(null)
 
-  const filtered = data.filter((d) => d.resource_type === resource)
-
-  if (!filtered.length) {
+  if (!data.length) {
     return <p style={{ color: '#687076', textAlign: 'center' }}>Not enough data to display this chart.</p>
   }
+
+  const filtered = data.filter((d) => d.resource_type === resource)
+  const hasData = filtered.length > 0
 
   const chartData = filtered.map((d) => {
     const current = mode === 'consumption' ? Number(d.current_consumption) : Number(d.current_cost)
@@ -76,8 +82,11 @@ export function MonthlyYoYChart({ data }: Props) {
         {(['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).map((r) => (
           <Chip
             key={r}
-            style={{ cursor: 'pointer', opacity: resource === r ? 1 : 0.4 }}
-            onClick={() => setResource(r)}
+            style={{
+              cursor: availableResources.includes(r) ? 'pointer' : 'default',
+              opacity: resource === r ? 1 : availableResources.includes(r) ? 0.55 : 0.2,
+            }}
+            onClick={() => availableResources.includes(r) && setResource(r)}
             variant="flat"
           >
             {r}
@@ -103,7 +112,12 @@ export function MonthlyYoYChart({ data }: Props) {
           </Button>
         </div>
       </div>
-      <div ref={ref}>
+      {!hasData && (
+        <p style={{ color: '#687076', textAlign: 'center', padding: '24px 0' }}>
+          No data for {resource} in the selected period.
+        </p>
+      )}
+      <div ref={ref} style={{ display: hasData ? undefined : 'none' }}>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={chartData} barCategoryGap="20%">
             <CartesianGrid strokeDasharray="3 3" />
