@@ -211,8 +211,7 @@ class AnalyticsService:
             " ) AS month, resource_type,"
             " SUM(amount_consumed) AS consumption, SUM(amount_paid) AS cost"
             " FROM bills WHERE user_id = :user_id AND deleted_at IS NULL"
-            " AND bill_date BETWEEN (:date_from::date - INTERVAL '1 year')"
-            "               AND (:date_to::date - INTERVAL '1 year')"
+            " AND bill_date BETWEEN :prev_date_from AND :prev_date_to"
             " " + rt_clause + " GROUP BY 1, 2"
             ") SELECT c.month, c.resource_type,"
             " c.consumption AS current_consumption,"
@@ -249,5 +248,15 @@ class AnalyticsService:
     async def _monthly_yoy(
         self, params: dict[str, object], rt_clause: str
     ) -> list[MonthlyYoYPoint]:
-        rows = (await self.db.execute(self._monthly_yoy_sql(rt_clause), params)).fetchall()
+        from datetime import timedelta
+
+        date_from = params["date_from"]
+        date_to = params["date_to"]
+        assert isinstance(date_from, date) and isinstance(date_to, date)
+        yoy_params = {
+            **params,
+            "prev_date_from": date_from - timedelta(days=365),
+            "prev_date_to": date_to - timedelta(days=365),
+        }
+        rows = (await self.db.execute(self._monthly_yoy_sql(rt_clause), yoy_params)).fetchall()
         return [self._make_yoy_point(r) for r in rows]
