@@ -359,3 +359,162 @@ async def test_bill_service_delete_raises_not_found() -> None:
 
     with pytest.raises(ResourceNotFoundError):
         await service.delete(uuid.uuid4(), uuid.uuid4())
+
+
+# ---------------------------------------------------------------------------
+# BillService — update
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_bill_service_update_applies_fields_and_returns_read() -> None:
+    from app.domain.enums import ResourceType, Unit
+    from app.domain.schemas import BillUpdate
+    from app.services.bill_service import BillService
+
+    existing = MagicMock()
+    existing.id = uuid.uuid4()
+    existing.user_id = uuid.uuid4()
+    existing.resource_type = "ELECTRICITY"
+    existing.bill_date = date.today()
+    existing.period_start = date.today() - timedelta(days=30)
+    existing.period_end = date.today()
+    existing.amount_consumed = Decimal("200.0")
+    existing.unit = "KWH"
+    existing.amount_paid = Decimal("40.0")
+    existing.currency = "EUR"
+    existing.raw_text = None
+    existing.source_file_path = None
+    existing.deleted_at = None
+    existing.created_at = None
+    existing.updated_at = None
+
+    bill_repo = MagicMock()
+    bill_repo.get_active = AsyncMock(return_value=existing)
+    bill_repo.update = AsyncMock()
+
+    service = BillService(bill_repo, MagicMock())
+
+    data = BillUpdate(
+        amount_consumed=Decimal("250.0"),
+        amount_paid=Decimal("50.0"),
+        currency="USD",
+        unit=Unit.KWH,
+        resource_type=ResourceType.ELECTRICITY,
+    )
+
+    with patch("app.services.bill_service.BillRead.model_validate") as mock_validate:
+        mock_validate.return_value = MagicMock()
+        result = await service.update(existing.id, existing.user_id, data)
+
+    assert result is not None
+    bill_repo.update.assert_called_once_with(existing)
+    assert existing.amount_consumed == 250.0
+    assert existing.amount_paid == 50.0
+    assert existing.currency == "USD"
+
+
+@pytest.mark.asyncio
+async def test_bill_service_update_raises_not_found() -> None:
+    from app.core.exceptions import ResourceNotFoundError
+    from app.domain.schemas import BillUpdate
+    from app.services.bill_service import BillService
+
+    bill_repo = MagicMock()
+    bill_repo.get_active = AsyncMock(return_value=None)
+
+    service = BillService(bill_repo, MagicMock())
+
+    with pytest.raises(ResourceNotFoundError):
+        await service.update(uuid.uuid4(), uuid.uuid4(), BillUpdate())
+
+
+@pytest.mark.asyncio
+async def test_bill_service_delete_returns_file_path() -> None:
+    from app.services.bill_service import BillService
+
+    existing = MagicMock()
+    existing.source_file_path = "/tmp/bill.pdf"
+
+    bill_repo = MagicMock()
+    bill_repo.get_active = AsyncMock(return_value=existing)
+    bill_repo.soft_delete = AsyncMock()
+
+    service = BillService(bill_repo, MagicMock())
+    path = await service.delete(uuid.uuid4(), uuid.uuid4())
+
+    assert path == "/tmp/bill.pdf"
+    bill_repo.soft_delete.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# MovingAveragePredictor
+# ---------------------------------------------------------------------------
+
+
+def _make_ma_bills(n: int = 5) -> list:
+    today = date.today()
+    bills = []
+    for i in range(n):
+        b = MagicMock()
+        b.bill_date = today - timedelta(days=(n - i) * 30)
+        b.amount_consumed = Decimal(str(100.0 + i * 10))
+        b.amount_paid = Decimal("45.0")
+        bills.append(b)
+    return bills
+
+
+def test_moving_average_predictor_fit_and_predict() -> None:
+    from app.services.ml.moving_average_predictor import MovingAveragePredictor
+
+    predictor = MovingAveragePredictor(window=3, alpha=0.7)
+    predictor.fit(_make_ma_bills(6))
+    result = predictor.predict(1)
+
+    assert float(result.predicted_consumption) > 0
+    assert float(result.predicted_cost) >= 0
+    assert float(result.confidence_interval_lower) <= float(result.predicted_consumption)
+    assert float(result.predicted_consumption) <= float(result.confidence_interval_upper)
+    assert result.model_version == "moving_average_v1"
+
+
+def test_moving_average_predictor_predict_before_fit_raises() -> None:
+    from app.services.ml.moving_average_predictor import MovingAveragePredictor
+
+    predictor = MovingAveragePredictor()
+    with pytest.raises(RuntimeError, match="fit"):
+        predictor.predict(1)
+
+
+def test_moving_average_predictor_insufficient_data_raises() -> None:
+    from app.services.ml.moving_average_predictor import MovingAveragePredictor
+
+    predictor = MovingAveragePredictor()
+    with pytest.raises(Exception):
+        predictor.fit(_make_ma_bills(2))
+
+
+def test_moving_average_predictor_window_larger_than_history() -> None:
+    from app.services.ml.moving_average_predictor import MovingAveragePredictor
+
+    predictor = MovingAveragePredictor(window=10, alpha=0.9)
+    predictor.fit(_make_ma_bills(4))
+    result = predictor.predict(2)
+
+    assert float(result.predicted_consumption) >= 0
+
+
+def test_moving_average_predictor_zero_std_gives_tight_ci() -> None:
+    """All bills with identical consumption → std=0, CI is symmetric around central."""
+    from app.services.ml.moving_average_predictor import MovingAveragePredictor
+
+    bills = _make_ma_bills(5)
+    for b in bills:
+        b.amount_consumed = Decimal("100.0")
+
+    predictor = MovingAveragePredictor(window=3, alpha=0.5)
+    predictor.fit(bills)
+    result = predictor.predict(1)
+
+    assert float(result.confidence_interval_lower) == float(result.predicted_consumption)
+    assert float(result.confidence_interval_upper) == float(result.predicted_consumption)
