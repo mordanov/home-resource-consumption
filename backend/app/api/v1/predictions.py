@@ -16,9 +16,9 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
     description=(
         "Returns predictions for 1-3 months. Requires at least 3 historical bills.\n\n"
         "**model** options: `linear_regression` (default), `moving_average`\n\n"
-        "**Linear regression params**: `ci_quantile` (0.01–0.49, default 0.05), "
-        "`n_resamples` (10–500, default 100)\n\n"
-        "**Moving average params**: `window` (1–12, default 3), `alpha` (0.01–0.99, default 0.7)"
+        "**Linear regression params**: `ci_quantile` (0.01-0.49, default 0.05), "
+        "`n_resamples` (10-500, default 100)\n\n"
+        "**Moving average params**: `window` (1-12, default 3), `alpha` (0.01-0.99, default 0.7)"
     ),
     responses={409: {"description": "Insufficient historical data"}},
 )
