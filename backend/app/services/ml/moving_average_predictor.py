@@ -33,9 +33,7 @@ class MovingAveragePredictor(BasePredictor):
         w_sum = sum(weights)
         consumptions = [float(b.amount_consumed) for b in window_bills]
         prices = [
-            float(b.amount_paid) / float(b.amount_consumed)
-            if float(b.amount_consumed) > 0
-            else 0.0
+            float(b.amount_paid) / float(b.amount_consumed) if float(b.amount_consumed) > 0 else 0.0
             for b in window_bills
         ]
         self._avg_consumption = sum(w * c for w, c in zip(weights, consumptions)) / w_sum
