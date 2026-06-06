@@ -252,7 +252,8 @@ class AnalyticsService:
 
         date_from = params["date_from"]
         date_to = params["date_to"]
-        assert isinstance(date_from, date) and isinstance(date_to, date)
+        assert isinstance(date_from, date)
+        assert isinstance(date_to, date)
         yoy_params = {
             **params,
             "prev_date_from": date_from - timedelta(days=365),
