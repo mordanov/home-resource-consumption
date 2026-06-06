@@ -1,17 +1,17 @@
-from typing import Any
-
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     DATABASE_URL: str = "postgresql+asyncpg://resource_user:resource_pass@db:5432/resource_tracker"
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
     MAX_UPLOAD_SIZE_MB: int = 20
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost"]
+    # Stored as a plain str so pydantic-settings never tries json.loads() on it.
+    # Accepts either comma-separated ("http://a,http://b") or JSON array ("[...]").
+    CORS_ORIGINS_RAW: str = "http://localhost:3000,http://localhost"
     JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -25,12 +25,15 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET_KEY must be at least 256 bits (32 bytes)")
         return v
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors(cls, v: Any) -> list[str]:
-        if isinstance(v, str):
-            return [o.strip() for o in v.split(",")]
-        return list(v)
+    @property
+    def CORS_ORIGINS(self) -> list[str]:  # noqa: N802
+        raw = self.CORS_ORIGINS_RAW.strip()
+        if not raw:
+            return ["http://localhost:3000", "http://localhost"]
+        if raw.startswith("["):
+            import json
+            return list(json.loads(raw))
+        return [o.strip() for o in raw.split(",") if o.strip()]
 
     @property
     def max_upload_bytes(self) -> int:
