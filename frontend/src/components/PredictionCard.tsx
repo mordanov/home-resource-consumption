@@ -19,9 +19,20 @@ interface InsufficientDataDetail {
   bills_needed?: number
 }
 
+export interface ModelParams {
+  model: 'linear_regression' | 'moving_average'
+  // linear_regression
+  ci_quantile: number
+  n_resamples: number
+  // moving_average
+  window: number
+  alpha: number
+}
+
 interface Props {
   resourceType: string
   horizon: number
+  modelParams: ModelParams
 }
 
 const RESOURCE_ICONS: Record<string, string> = {
@@ -36,13 +47,21 @@ const RESOURCE_COLORS: Record<string, 'warning' | 'danger' | 'primary'> = {
   WATER: 'primary',
 }
 
-export function PredictionCard({ resourceType, horizon }: Props) {
+export function PredictionCard({ resourceType, horizon, modelParams }: Props) {
   const { t } = useTranslation()
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.predictions.byResource(resourceType, horizon),
+    queryKey: queryKeys.predictions.byResource(resourceType, horizon, modelParams),
     queryFn: async () => {
+      const params = new URLSearchParams({
+        horizon: String(horizon),
+        model: modelParams.model,
+        ci_quantile: String(modelParams.ci_quantile),
+        n_resamples: String(modelParams.n_resamples),
+        window: String(modelParams.window),
+        alpha: String(modelParams.alpha),
+      })
       const res = await axiosInstance.get<PredictionRead[]>(
-        `/predictions/${resourceType}?horizon=${horizon}`,
+        `/predictions/${resourceType}?${params}`,
       )
       return res.data[0] ?? null
     },

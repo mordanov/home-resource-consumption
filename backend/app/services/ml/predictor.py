@@ -38,25 +38,32 @@ class _ModelTrainer:
 
 
 class _ModelPredictor:
-    N_RESAMPLES = 100
-    CI_QUANTILE = 0.05
-
-    def __init__(self, trainer: _ModelTrainer, residuals: _NDArray) -> None:
+    def __init__(
+        self,
+        trainer: _ModelTrainer,
+        residuals: _NDArray,
+        n_resamples: int = 100,
+        ci_quantile: float = 0.05,
+    ) -> None:
         self._trainer = trainer
         self._residuals = residuals
+        self._n_resamples = n_resamples
+        self._ci_quantile = ci_quantile
 
     def predict_with_ci(self, features: _NDArray) -> tuple[float, float, float]:
         central = float(self._trainer.predict(features)[0])
         bootstrapped = [
-            central + float(np.random.choice(self._residuals)) for _ in range(self.N_RESAMPLES)
+            central + float(np.random.choice(self._residuals)) for _ in range(self._n_resamples)
         ]
-        lower = float(np.quantile(bootstrapped, self.CI_QUANTILE))
-        upper = float(np.quantile(bootstrapped, 1 - self.CI_QUANTILE))
+        lower = float(np.quantile(bootstrapped, self._ci_quantile))
+        upper = float(np.quantile(bootstrapped, 1 - self._ci_quantile))
         return central, lower, upper
 
 
 class LinearRegressionPredictor(BasePredictor):
-    def __init__(self) -> None:
+    def __init__(self, n_resamples: int = 100, ci_quantile: float = 0.05) -> None:
+        self._n_resamples = n_resamples
+        self._ci_quantile = ci_quantile
         self._trainer: _ModelTrainer | None = None
         self._predictor: _ModelPredictor | None = None
         self._last_row: dict[str, float] | None = None
@@ -74,7 +81,9 @@ class LinearRegressionPredictor(BasePredictor):
         trainer = _ModelTrainer().fit(features, target)
         residuals: _NDArray = target - trainer.predict(features)
         self._trainer = trainer
-        self._predictor = _ModelPredictor(trainer, residuals)
+        self._predictor = _ModelPredictor(
+            trainer, residuals, n_resamples=self._n_resamples, ci_quantile=self._ci_quantile
+        )
         self._last_row = df.iloc[-1][feature_cols].to_dict()
         self._avg_price_per_unit = float(df["price_per_unit"].mean())
 

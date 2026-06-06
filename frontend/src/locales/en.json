@@ -6,7 +6,6 @@
   "nav.predictions": "Predictions",
   "nav.analysis": "Analysis",
   "nav.logout": "Logout",
-
   "login.title": "Sign in",
   "login.username": "Username",
   "login.password": "Password",
@@ -17,7 +16,6 @@
   "login.failed": "Login failed",
   "login.badCreds": "Incorrect username or password.",
   "login.unexpected": "An unexpected error occurred.",
-
   "register.title": "Create account",
   "register.username": "Username",
   "register.email": "Email",
@@ -44,7 +42,6 @@
   "register.strengthGood": "Good",
   "register.strengthStrong": "Strong",
   "register.strengthLabel": "Password strength: {{strength}}",
-
   "dashboard.title": "Dashboard",
   "dashboard.uploadBill": "Upload Bill",
   "dashboard.noBills": "No bills yet.",
@@ -58,7 +55,6 @@
   "dashboard.electricity": "Electricity",
   "dashboard.gas": "Gas",
   "dashboard.water": "Water",
-
   "bills.title": "Bill History",
   "bills.exportPdf": "Export PDF",
   "bills.uploadBill": "Upload Bill",
@@ -70,7 +66,6 @@
   "bills.colPeriod": "Period",
   "bills.colConsumed": "Consumed",
   "bills.colPaid": "Paid",
-
   "upload.title": "Upload Bill",
   "upload.selectFile": "Select file",
   "upload.parsedPreview": "Parsed preview",
@@ -110,7 +105,6 @@
   "upload.fieldCurrency": "Currency",
   "upload.fieldAmountConsumed": "Amount consumed",
   "upload.fieldAmountPaid": "Amount paid",
-
   "billDetail.title": "Bill detail",
   "billDetail.resourceType": "Resource type",
   "billDetail.billDate": "Bill date",
@@ -131,7 +125,6 @@
   "billDetail.updateFailed": "Update failed",
   "billDetail.updated": "Bill updated",
   "billDetail.error": "An error occurred.",
-
   "predictions.title": "Consumption Forecasts",
   "predictions.horizon1": "1 month",
   "predictions.horizon2": "2 months",
@@ -144,7 +137,6 @@
   "predictions.predictedCost": "Predicted cost",
   "predictions.model": "Model: {{version}}",
   "predictions.loadError": "Could not load prediction. Please try again.",
-
   "analysis.title": "Analysis",
   "analysis.exportReport": "Export Full Report",
   "analysis.from": "From",
@@ -155,7 +147,6 @@
   "analysis.yoyTitle": "Year-over-year",
   "analysis.cumulativeTitle": "Cumulative cost (YTD)",
   "analysis.heatmapTitle": "Consumption heatmap",
-
   "export.title": "Export PDF Report",
   "export.from": "From",
   "export.to": "To",
@@ -164,5 +155,15 @@
   "export.cancel": "Cancel",
   "export.rangeError": "Date range cannot exceed 24 months.",
   "export.failed": "Export failed",
-  "export.failedDesc": "Could not generate the report."
+  "export.failedDesc": "Could not generate the report.",
+  "predictions.horizonLabel": "Forecast horizon",
+  "predictions.modelSettings": "Model settings",
+  "predictions.modelLabel": "Model",
+  "predictions.modelLinear": "Linear regression",
+  "predictions.modelMA": "Moving average",
+  "predictions.ciQuantile": "CI quantile",
+  "predictions.nResamples": "Bootstrap resamples",
+  "predictions.window": "Window (months)",
+  "predictions.alpha": "Decay factor (α)",
+  "analysis.monthlyYoYTitle": "Monthly comparison: this year vs last year"
 }

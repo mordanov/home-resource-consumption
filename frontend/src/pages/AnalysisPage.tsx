@@ -8,6 +8,7 @@ import { PricePerUnitChart } from '../components/charts/PricePerUnitChart'
 import { YearOverYearChart } from '../components/charts/YearOverYearChart'
 import { CumulativeCostChart } from '../components/charts/CumulativeCostChart'
 import { ConsumptionHeatmap } from '../components/charts/ConsumptionHeatmap'
+import { MonthlyYoYChart } from '../components/charts/MonthlyYoYChart'
 import { ExportModal } from '../components/ExportModal'
 import axiosInstance from '../lib/axios'
 import { queryKeys } from '../lib/queryKeys'
@@ -30,12 +31,24 @@ interface CumulativeCostPointRaw {
   cumulative_cost: string
 }
 
+interface MonthlyYoYPointRaw {
+  month: string
+  resource_type: string
+  current_consumption: string
+  prev_year_consumption: string | null
+  consumption_change_pct: string | null
+  current_cost: string
+  prev_year_cost: string | null
+  cost_change_pct: string | null
+}
+
 export interface AnalyticsSummary {
   monthly_consumption: MonthlyDataPointRaw[]
   monthly_cost: MonthlyDataPointRaw[]
   price_per_unit: MonthlyDataPointRaw[]
   year_over_year: YoYPointRaw[]
   cumulative_cost_ytd: CumulativeCostPointRaw[]
+  monthly_yoy: MonthlyYoYPointRaw[]
 }
 
 type PivotedPoint = { month: string; ELECTRICITY?: number; GAS?: number; WATER?: number }
@@ -192,6 +205,11 @@ export function AnalysisPage() {
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.heatmapTitle')}</h2></CardHeader>
             <CardBody><ConsumptionHeatmap data={data ? buildHeatmap(data.monthly_consumption) : {}} /></CardBody>
+          </Card>
+
+          <Card style={{ gridColumn: '1 / -1' }}>
+            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.monthlyYoYTitle')}</h2></CardHeader>
+            <CardBody><MonthlyYoYChart data={data?.monthly_yoy ?? []} /></CardBody>
           </Card>
         </div>
       )}

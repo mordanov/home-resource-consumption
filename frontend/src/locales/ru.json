@@ -6,7 +6,6 @@
   "nav.predictions": "Прогнозы",
   "nav.analysis": "Анализ",
   "nav.logout": "Выйти",
-
   "login.title": "Войти",
   "login.username": "Имя пользователя",
   "login.password": "Пароль",
@@ -17,7 +16,6 @@
   "login.failed": "Ошибка входа",
   "login.badCreds": "Неверное имя пользователя или пароль.",
   "login.unexpected": "Произошла непредвиденная ошибка.",
-
   "register.title": "Создать аккаунт",
   "register.username": "Имя пользователя",
   "register.email": "Email",
@@ -44,7 +42,6 @@
   "register.strengthGood": "Хороший",
   "register.strengthStrong": "Сильный",
   "register.strengthLabel": "Надёжность пароля: {{strength}}",
-
   "dashboard.title": "Главная",
   "dashboard.uploadBill": "Загрузить счёт",
   "dashboard.noBills": "Счетов пока нет.",
@@ -58,7 +55,6 @@
   "dashboard.electricity": "Электричество",
   "dashboard.gas": "Газ",
   "dashboard.water": "Вода",
-
   "bills.title": "История счетов",
   "bills.exportPdf": "Экспорт PDF",
   "bills.uploadBill": "Загрузить счёт",
@@ -70,7 +66,6 @@
   "bills.colPeriod": "Период",
   "bills.colConsumed": "Потреблено",
   "bills.colPaid": "Оплачено",
-
   "upload.title": "Загрузить счёт",
   "upload.selectFile": "Выберите файл",
   "upload.parsedPreview": "Распознанные данные",
@@ -110,7 +105,6 @@
   "upload.fieldCurrency": "Валюта",
   "upload.fieldAmountConsumed": "Объём потребления",
   "upload.fieldAmountPaid": "Сумма оплаты",
-
   "billDetail.title": "Подробности счёта",
   "billDetail.resourceType": "Тип ресурса",
   "billDetail.billDate": "Дата счёта",
@@ -131,7 +125,6 @@
   "billDetail.updateFailed": "Ошибка обновления",
   "billDetail.updated": "Счёт обновлён",
   "billDetail.error": "Произошла ошибка.",
-
   "predictions.title": "Прогнозы потребления",
   "predictions.horizon1": "1 месяц",
   "predictions.horizon2": "2 месяца",
@@ -144,7 +137,6 @@
   "predictions.predictedCost": "Прогнозируемая стоимость",
   "predictions.model": "Модель: {{version}}",
   "predictions.loadError": "Не удалось загрузить прогноз. Попробуйте ещё раз.",
-
   "analysis.title": "Анализ",
   "analysis.exportReport": "Экспортировать отчёт",
   "analysis.from": "С",
@@ -155,7 +147,6 @@
   "analysis.yoyTitle": "Год к году",
   "analysis.cumulativeTitle": "Накопленные расходы (с начала года)",
   "analysis.heatmapTitle": "Тепловая карта потребления",
-
   "export.title": "Экспорт PDF-отчёта",
   "export.from": "С",
   "export.to": "По",
@@ -164,5 +155,15 @@
   "export.cancel": "Отмена",
   "export.rangeError": "Диапазон дат не может превышать 24 месяца.",
   "export.failed": "Ошибка экспорта",
-  "export.failedDesc": "Не удалось сформировать отчёт."
+  "export.failedDesc": "Не удалось сформировать отчёт.",
+  "predictions.horizonLabel": "Горизонт прогноза",
+  "predictions.modelSettings": "Настройки модели",
+  "predictions.modelLabel": "Модель",
+  "predictions.modelLinear": "Линейная регрессия",
+  "predictions.modelMA": "Скользящее среднее",
+  "predictions.ciQuantile": "Квантиль ДИ",
+  "predictions.nResamples": "Число выборок",
+  "predictions.window": "Окно (мес.)",
+  "predictions.alpha": "Коэф. затухания (α)",
+  "analysis.monthlyYoYTitle": "Помесячное сравнение: этот год vs прошлый"
 }

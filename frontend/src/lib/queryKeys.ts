@@ -9,8 +9,8 @@ export const queryKeys = {
   },
   predictions: {
     all: ['predictions'] as const,
-    byResource: (resourceType: string, horizon: number) =>
-      ['predictions', resourceType, horizon] as const,
+    byResource: (resourceType: string, horizon: number, params?: object) =>
+      ['predictions', resourceType, horizon, params] as const,
   },
   analytics: {
     summary: (params: Record<string, unknown>) => ['analytics', 'summary', params] as const,

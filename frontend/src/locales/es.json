@@ -6,7 +6,6 @@
   "nav.predictions": "Predicciones",
   "nav.analysis": "Análisis",
   "nav.logout": "Salir",
-
   "login.title": "Iniciar sesión",
   "login.username": "Usuario",
   "login.password": "Contraseña",
@@ -17,7 +16,6 @@
   "login.failed": "Error al iniciar sesión",
   "login.badCreds": "Usuario o contraseña incorrectos.",
   "login.unexpected": "Ocurrió un error inesperado.",
-
   "register.title": "Crear cuenta",
   "register.username": "Usuario",
   "register.email": "Correo electrónico",
@@ -44,7 +42,6 @@
   "register.strengthGood": "Buena",
   "register.strengthStrong": "Fuerte",
   "register.strengthLabel": "Seguridad: {{strength}}",
-
   "dashboard.title": "Panel",
   "dashboard.uploadBill": "Subir factura",
   "dashboard.noBills": "Sin facturas aún.",
@@ -58,7 +55,6 @@
   "dashboard.electricity": "Electricidad",
   "dashboard.gas": "Gas",
   "dashboard.water": "Agua",
-
   "bills.title": "Historial de facturas",
   "bills.exportPdf": "Exportar PDF",
   "bills.uploadBill": "Subir factura",
@@ -70,7 +66,6 @@
   "bills.colPeriod": "Período",
   "bills.colConsumed": "Consumido",
   "bills.colPaid": "Pagado",
-
   "upload.title": "Subir factura",
   "upload.selectFile": "Seleccionar archivo",
   "upload.parsedPreview": "Vista previa",
@@ -110,7 +105,6 @@
   "upload.fieldCurrency": "Moneda",
   "upload.fieldAmountConsumed": "Cantidad consumida",
   "upload.fieldAmountPaid": "Cantidad pagada",
-
   "billDetail.title": "Detalle de factura",
   "billDetail.resourceType": "Tipo de recurso",
   "billDetail.billDate": "Fecha de factura",
@@ -131,7 +125,6 @@
   "billDetail.updateFailed": "Error al actualizar",
   "billDetail.updated": "Factura actualizada",
   "billDetail.error": "Ocurrió un error.",
-
   "predictions.title": "Previsiones de consumo",
   "predictions.horizon1": "1 mes",
   "predictions.horizon2": "2 meses",
@@ -144,7 +137,6 @@
   "predictions.predictedCost": "Coste previsto",
   "predictions.model": "Modelo: {{version}}",
   "predictions.loadError": "No se pudo cargar la predicción. Inténtalo de nuevo.",
-
   "analysis.title": "Análisis",
   "analysis.exportReport": "Exportar informe completo",
   "analysis.from": "Desde",
@@ -155,7 +147,6 @@
   "analysis.yoyTitle": "Año a año",
   "analysis.cumulativeTitle": "Coste acumulado (año actual)",
   "analysis.heatmapTitle": "Mapa de calor de consumo",
-
   "export.title": "Exportar informe PDF",
   "export.from": "Desde",
   "export.to": "Hasta",
@@ -164,5 +155,15 @@
   "export.cancel": "Cancelar",
   "export.rangeError": "El rango de fechas no puede superar los 24 meses.",
   "export.failed": "Error en la exportación",
-  "export.failedDesc": "No se pudo generar el informe."
+  "export.failedDesc": "No se pudo generar el informe.",
+  "predictions.horizonLabel": "Horizonte de pronóstico",
+  "predictions.modelSettings": "Configuración del modelo",
+  "predictions.modelLabel": "Modelo",
+  "predictions.modelLinear": "Regresión lineal",
+  "predictions.modelMA": "Media móvil",
+  "predictions.ciQuantile": "Cuantil IC",
+  "predictions.nResamples": "Remuestreos",
+  "predictions.window": "Ventana (meses)",
+  "predictions.alpha": "Factor de decaimiento (α)",
+  "analysis.monthlyYoYTitle": "Comparación mensual: este año vs año anterior"
 }

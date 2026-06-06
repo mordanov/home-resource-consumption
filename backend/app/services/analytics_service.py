@@ -11,6 +11,7 @@ from app.domain.schemas import (
     AnalyticsSummary,
     CumulativeCostPoint,
     MonthlyDataPoint,
+    MonthlyYoYPoint,
     YearOverYearPoint,
 )
 
@@ -42,12 +43,14 @@ class AnalyticsService:
         price_per_unit = await self._price_per_unit(params, rt_clause)
         year_over_year = await self._year_over_year(params, rt_clause)
         cumulative = await self._cumulative_cost_ytd(params, rt_clause)
+        monthly_yoy = await self._monthly_yoy(params, rt_clause)
         return AnalyticsSummary(
             monthly_consumption=monthly_consumption,
             monthly_cost=monthly_cost,
             price_per_unit=price_per_unit,
             year_over_year=year_over_year,
             cumulative_cost_ytd=cumulative,
+            monthly_yoy=monthly_yoy,
         )
 
     async def _monthly_consumption(
@@ -191,3 +194,68 @@ class AnalyticsService:
             )
             for r in rows
         ]
+
+    async def _monthly_yoy(
+        self, params: dict[str, object], rt_clause: str
+    ) -> list[MonthlyYoYPoint]:
+        """For each month in the requested range, compare consumption and cost
+        with the same calendar month one year prior."""
+        sql = text(
+            "WITH current_period AS ("
+            " SELECT to_char(date_trunc('month', bill_date), 'YYYY-MM') AS month,"
+            " resource_type,"
+            " SUM(amount_consumed) AS consumption,"
+            " SUM(amount_paid) AS cost"
+            " FROM bills"
+            " WHERE user_id = :user_id"
+            " AND deleted_at IS NULL"
+            " AND bill_date BETWEEN :date_from AND :date_to"
+            " " + rt_clause + " GROUP BY 1, 2"
+            "),"
+            " prev_period AS ("
+            " SELECT to_char(date_trunc('month', bill_date) + INTERVAL '1 year', 'YYYY-MM') AS month,"
+            " resource_type,"
+            " SUM(amount_consumed) AS consumption,"
+            " SUM(amount_paid) AS cost"
+            " FROM bills"
+            " WHERE user_id = :user_id"
+            " AND deleted_at IS NULL"
+            " AND bill_date BETWEEN (:date_from::date - INTERVAL '1 year')"
+            "               AND (:date_to::date - INTERVAL '1 year')"
+            " " + rt_clause + " GROUP BY 1, 2"
+            ")"
+            " SELECT c.month, c.resource_type,"
+            " c.consumption AS current_consumption,"
+            " p.consumption AS prev_year_consumption,"
+            " c.cost AS current_cost,"
+            " p.cost AS prev_year_cost"
+            " FROM current_period c"
+            " LEFT JOIN prev_period p USING (month, resource_type)"
+            " ORDER BY c.month, c.resource_type"
+        )
+        rows = (await self.db.execute(sql, params)).fetchall()
+        result = []
+        for r in rows:
+            curr_c = Decimal(str(r.current_consumption))
+            prev_c = Decimal(str(r.prev_year_consumption)) if r.prev_year_consumption else None
+            curr_cost = Decimal(str(r.current_cost))
+            prev_cost = Decimal(str(r.prev_year_cost)) if r.prev_year_cost else None
+            c_pct: Decimal | None = None
+            cost_pct: Decimal | None = None
+            if prev_c and prev_c != 0:
+                c_pct = ((curr_c - prev_c) / prev_c * 100).quantize(Decimal("0.01"))
+            if prev_cost and prev_cost != 0:
+                cost_pct = ((curr_cost - prev_cost) / prev_cost * 100).quantize(Decimal("0.01"))
+            result.append(
+                MonthlyYoYPoint(
+                    month=r.month,
+                    resource_type=ResourceType(r.resource_type),
+                    current_consumption=curr_c,
+                    prev_year_consumption=prev_c,
+                    consumption_change_pct=c_pct,
+                    current_cost=curr_cost,
+                    prev_year_cost=prev_cost,
+                    cost_change_pct=cost_pct,
+                )
+            )
+        return result

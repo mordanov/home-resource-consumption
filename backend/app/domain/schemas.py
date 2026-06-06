@@ -164,9 +164,21 @@ class CumulativeCostPoint(BaseModel):
     cumulative_cost: Decimal
 
 
+class MonthlyYoYPoint(BaseModel):
+    month: str
+    resource_type: ResourceType
+    current_consumption: Decimal
+    prev_year_consumption: Decimal | None
+    consumption_change_pct: Decimal | None
+    current_cost: Decimal
+    prev_year_cost: Decimal | None
+    cost_change_pct: Decimal | None
+
+
 class AnalyticsSummary(BaseModel):
     monthly_consumption: list[MonthlyDataPoint]
     monthly_cost: list[MonthlyDataPoint]
     price_per_unit: list[MonthlyDataPoint]
     year_over_year: list[YearOverYearPoint]
     cumulative_cost_ytd: list[CumulativeCostPoint]
+    monthly_yoy: list[MonthlyYoYPoint]
