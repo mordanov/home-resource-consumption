@@ -10,6 +10,7 @@ import {
   CheckboxGroup,
   addToast,
 } from '@heroui/react'
+import { useTranslation } from 'react-i18next'
 import axiosInstance from '../lib/axios'
 
 interface Props {
@@ -26,6 +27,7 @@ function toDateStr(d: Date) {
 const ALL_RESOURCES = ['ELECTRICITY', 'GAS', 'WATER']
 
 export function ExportModal({ isOpen, onClose, defaultDateFrom, defaultDateTo }: Props) {
+  const { t } = useTranslation()
   const today = toDateStr(new Date())
   const yearAgo = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return toDateStr(d) })()
 
@@ -38,13 +40,12 @@ export function ExportModal({ isOpen, onClose, defaultDateFrom, defaultDateTo }:
     (new Date(dateTo).getFullYear() - new Date(dateFrom).getFullYear()) * 12 +
     (new Date(dateTo).getMonth() - new Date(dateFrom).getMonth())
 
-  const rangeError = monthDiff > 24 ? 'Date range cannot exceed 24 months.' : null
+  const rangeError = monthDiff > 24 ? t('export.rangeError') : null
 
   async function handleDownload() {
     if (rangeError || resources.length === 0) return
     setLoading(true)
     try {
-      // Use axiosInstance so the Authorization header is sent (token is in-memory, not a cookie)
       const params: Record<string, string> = { date_from: dateFrom, date_to: dateTo }
       resources.forEach((r, i) => { params[`resource_type[${i}]`] = r })
 
@@ -64,8 +65,8 @@ export function ExportModal({ isOpen, onClose, defaultDateFrom, defaultDateTo }:
     } catch (err) {
       const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
       addToast({
-        title: 'Export failed',
-        description: detail ?? 'Could not generate the report.',
+        title: t('export.failed'),
+        description: detail ?? t('export.failedDesc'),
         color: 'danger',
       })
     } finally {
@@ -78,12 +79,12 @@ export function ExportModal({ isOpen, onClose, defaultDateFrom, defaultDateTo }:
       <ModalContent>
         {() => (
           <>
-            <ModalHeader>Export PDF Report</ModalHeader>
+            <ModalHeader>{t('export.title')}</ModalHeader>
             <ModalBody>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   <label style={{ fontSize: '0.875rem' }}>
-                    From{' '}
+                    {t('export.from')}{' '}
                     <input
                       type="date"
                       value={dateFrom}
@@ -92,7 +93,7 @@ export function ExportModal({ isOpen, onClose, defaultDateFrom, defaultDateTo }:
                     />
                   </label>
                   <label style={{ fontSize: '0.875rem' }}>
-                    To{' '}
+                    {t('export.to')}{' '}
                     <input
                       type="date"
                       value={dateTo}
@@ -107,7 +108,7 @@ export function ExportModal({ isOpen, onClose, defaultDateFrom, defaultDateTo }:
                 )}
 
                 <CheckboxGroup
-                  label="Resource types"
+                  label={t('export.resourceTypes')}
                   value={resources}
                   onValueChange={setResources}
                 >
@@ -124,10 +125,10 @@ export function ExportModal({ isOpen, onClose, defaultDateFrom, defaultDateTo }:
                 isLoading={loading}
                 isDisabled={!!rangeError || resources.length === 0}
               >
-                Download PDF
+                {t('export.download')}
               </Button>
               <Button variant="flat" onPress={onClose}>
-                Cancel
+                {t('export.cancel')}
               </Button>
             </ModalFooter>
           </>

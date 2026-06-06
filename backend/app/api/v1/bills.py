@@ -7,7 +7,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
 from app.api.deps import get_bill_service, get_current_user
 from app.domain.enums import ResourceType
 from app.domain.models import User
-from app.domain.schemas import BillPreview, BillRead, PaginatedResponse
+from app.domain.schemas import BillPreview, BillRead, BillUpdate, PaginatedResponse
 from app.services.bill_service import BillService
 from app.workers.tasks import cleanup_uploaded_file
 
@@ -78,6 +78,21 @@ async def get_bill(
     svc: BillService = Depends(get_bill_service),
 ) -> BillRead:
     return await svc.get_by_id(bill_id, current_user.id)
+
+
+@router.patch(
+    "/{bill_id}",
+    response_model=BillRead,
+    summary="Update bill fields",
+    responses={404: {"description": "Bill not found"}},
+)
+async def update_bill(
+    bill_id: UUID,
+    data: BillUpdate,
+    current_user: User = Depends(get_current_user),
+    svc: BillService = Depends(get_bill_service),
+) -> BillRead:
+    return await svc.update(bill_id, current_user.id, data)
 
 
 @router.delete(

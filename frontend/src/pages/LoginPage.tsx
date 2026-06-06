@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Card, CardBody, CardHeader, Input, Button, addToast } from '@heroui/react'
+import { useTranslation } from 'react-i18next'
 import axiosInstance from '../lib/axios'
 import { useAuthStore } from '../store/authStore'
 import type { UserRead } from '../store/authStore'
@@ -15,6 +16,7 @@ interface ProblemDetail {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { setTokens, accessToken } = useAuthStore()
   const [username, setUsername] = useState('')
@@ -22,7 +24,6 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [credError, setCredError] = useState<string | null>(null)
 
-  // Already authenticated → redirect to dashboard
   useEffect(() => {
     if (accessToken) navigate('/', { replace: true })
   }, [accessToken, navigate])
@@ -40,11 +41,11 @@ export function LoginPage() {
       const status = (err as { response?: { status?: number; data?: ProblemDetail } }).response?.status
       const detail = (err as { response?: { data?: ProblemDetail } }).response?.data?.detail
       if (status === 401) {
-        setCredError('Incorrect username or password.')
+        setCredError(t('login.badCreds'))
       } else {
         addToast({
-          title: 'Login failed',
-          description: detail ?? 'An unexpected error occurred.',
+          title: t('login.failed'),
+          description: detail ?? t('login.unexpected'),
           color: 'danger',
         })
       }
@@ -66,12 +67,12 @@ export function LoginPage() {
       <Card style={{ width: '100%', maxWidth: 400 }}>
         <CardHeader style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
           <span style={{ fontSize: '1.5rem' }}>⚡💧🔥</span>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Sign in</h1>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>{t('login.title')}</h1>
         </CardHeader>
         <CardBody>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Input
-              label="Username"
+              label={t('login.username')}
               value={username}
               onValueChange={setUsername}
               autoComplete="username"
@@ -79,7 +80,7 @@ export function LoginPage() {
               isDisabled={loading}
             />
             <Input
-              label="Password"
+              label={t('login.password')}
               type="password"
               value={password}
               onValueChange={(v) => { setPassword(v); setCredError(null) }}
@@ -90,12 +91,12 @@ export function LoginPage() {
               errorMessage={credError ?? undefined}
             />
             <Button type="submit" color="primary" isLoading={loading} fullWidth>
-              {loading ? 'Signing in…' : 'Sign in'}
+              {loading ? t('login.submitting') : t('login.submit')}
             </Button>
             <p style={{ textAlign: 'center', fontSize: '0.875rem' }}>
-              Don't have an account?{' '}
+              {t('login.noAccount')}{' '}
               <Link to="/register" style={{ color: '#006FEE' }}>
-                Register
+                {t('login.register')}
               </Link>
             </p>
           </form>

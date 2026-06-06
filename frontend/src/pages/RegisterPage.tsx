@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Card, CardBody, CardHeader, Input, Button, Progress, addToast } from '@heroui/react'
+import { useTranslation } from 'react-i18next'
 import axiosInstance from '../lib/axios'
 
 interface ProblemDetail {
@@ -14,28 +15,33 @@ interface PasswordStrength {
   ariaLabel: string
 }
 
-function getPasswordStrength(pw: string): PasswordStrength {
-  if (!pw) return { score: 0, label: '', color: 'danger', ariaLabel: '' }
+function usePasswordStrength(pw: string): PasswordStrength | null {
+  const { t } = useTranslation()
+  if (!pw) return null
   const hasUpper = /[A-Z]/.test(pw)
   const hasLower = /[a-z]/.test(pw)
   const hasDigit = /\d/.test(pw)
   const longEnough = pw.length >= 8
   const rulesMet = [hasUpper, hasLower, hasDigit].filter(Boolean).length
 
-  if (!longEnough) return { score: 25, label: 'Weak — too short', color: 'danger', ariaLabel: 'Weak — too short' }
-  if (rulesMet === 1) return { score: 50, label: 'Fair', color: 'warning', ariaLabel: 'Fair' }
-  if (rulesMet === 2) return { score: 75, label: 'Good', color: 'primary', ariaLabel: 'Good' }
-  return { score: 100, label: 'Strong', color: 'success', ariaLabel: 'Strong' }
-}
-
-function getPasswordError(pw: string): string | null {
-  if (pw.length < 8) return 'Password must be at least 8 characters'
-  if (!/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/\d/.test(pw))
-    return 'Password must include uppercase, lowercase, and a number'
-  return null
+  if (!longEnough) {
+    const label = t('register.strengthWeak')
+    return { score: 25, label, color: 'danger', ariaLabel: label }
+  }
+  if (rulesMet === 1) {
+    const label = t('register.strengthFair')
+    return { score: 50, label, color: 'warning', ariaLabel: label }
+  }
+  if (rulesMet === 2) {
+    const label = t('register.strengthGood')
+    return { score: 75, label, color: 'primary', ariaLabel: label }
+  }
+  const label = t('register.strengthStrong')
+  return { score: 100, label, color: 'success', ariaLabel: label }
 }
 
 export function RegisterPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -43,7 +49,6 @@ export function RegisterPage() {
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Touched state for blur-based validation
   const [touched, setTouched] = useState({
     username: false,
     email: false,
@@ -51,26 +56,31 @@ export function RegisterPage() {
     confirm: false,
   })
 
-  // Field errors
   const [serverErrors, setServerErrors] = useState<{ username?: string; email?: string }>({})
 
-  const strength = password ? getPasswordStrength(password) : null
+  const strength = usePasswordStrength(password)
+
+  function getPasswordError(pw: string): string | null {
+    if (pw.length < 8) return t('register.passwordShort')
+    if (!/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/\d/.test(pw)) return t('register.passwordWeak')
+    return null
+  }
 
   const errors = {
-    username: touched.username && !username ? 'Username is required' : (serverErrors.username ?? null),
+    username: touched.username && !username ? t('register.usernameRequired') : (serverErrors.username ?? null),
     email: touched.email
       ? !email
-        ? 'Email is required'
+        ? t('register.emailRequired')
         : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-        ? 'Enter a valid email address'
+        ? t('register.emailInvalid')
         : (serverErrors.email ?? null)
       : null,
     password: touched.password ? getPasswordError(password) : null,
     confirm: touched.confirm
       ? !confirm
-        ? 'Please confirm your password'
+        ? t('register.confirmRequired')
         : confirm !== password
-        ? 'Passwords do not match'
+        ? t('register.confirmMismatch')
         : null
       : null,
   }
@@ -98,23 +108,23 @@ export function RegisterPage() {
     setServerErrors({})
     try {
       await axiosInstance.post('/auth/register', { username, email, password })
-      addToast({ title: 'Account created — please sign in.', color: 'success' })
+      addToast({ title: t('register.success'), color: 'success' })
       navigate('/login')
     } catch (err) {
       const status = (err as { response?: { status?: number; data?: ProblemDetail } }).response?.status
       const detail = (err as { response?: { data?: ProblemDetail } }).response?.data?.detail ?? ''
       if (status === 409) {
         if (detail.toLowerCase().includes('username')) {
-          setServerErrors({ username: 'This username is already taken' })
+          setServerErrors({ username: t('register.usernameTaken') })
         } else if (detail.toLowerCase().includes('email')) {
-          setServerErrors({ email: 'An account with this email already exists' })
+          setServerErrors({ email: t('register.emailTaken') })
         } else {
-          addToast({ title: 'Registration failed', description: detail, color: 'danger' })
+          addToast({ title: t('register.failed'), description: detail, color: 'danger' })
         }
       } else {
         addToast({
-          title: 'Registration failed',
-          description: detail || 'An unexpected error occurred.',
+          title: t('register.failed'),
+          description: detail || t('register.unexpected'),
           color: 'danger',
         })
       }
@@ -135,12 +145,12 @@ export function RegisterPage() {
     >
       <Card style={{ width: '100%', maxWidth: 440 }}>
         <CardHeader>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Create account</h1>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>{t('register.title')}</h1>
         </CardHeader>
         <CardBody>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Input
-              label="Username"
+              label={t('register.username')}
               value={username}
               onValueChange={(v) => { setUsername(v); setServerErrors((p) => ({ ...p, username: undefined })) }}
               onBlur={() => touch('username')}
@@ -151,7 +161,7 @@ export function RegisterPage() {
               errorMessage={errors.username ?? undefined}
             />
             <Input
-              label="Email"
+              label={t('register.email')}
               type="email"
               value={email}
               onValueChange={(v) => { setEmail(v); setServerErrors((p) => ({ ...p, email: undefined })) }}
@@ -164,7 +174,7 @@ export function RegisterPage() {
             />
             <div>
               <Input
-                label="Password"
+                label={t('register.password')}
                 type="password"
                 value={password}
                 onValueChange={(v) => {
@@ -184,16 +194,16 @@ export function RegisterPage() {
                     value={strength.score}
                     color={strength.color}
                     size="sm"
-                    aria-label={`Password strength: ${strength.ariaLabel}`}
+                    aria-label={t('register.strengthLabel', { strength: strength.ariaLabel })}
                   />
                   <p style={{ fontSize: '0.75rem', marginTop: 3, color: `var(--heroui-${strength.color})` }}>
-                    Password strength: {strength.label}
+                    {t('register.strengthLabel', { strength: strength.label })}
                   </p>
                 </div>
               )}
             </div>
             <Input
-              label="Confirm password"
+              label={t('register.confirmPassword')}
               type="password"
               value={confirm}
               onValueChange={(v) => {
@@ -208,12 +218,12 @@ export function RegisterPage() {
               errorMessage={errors.confirm ?? undefined}
             />
             <Button type="submit" color="primary" isLoading={loading} fullWidth>
-              {loading ? 'Creating account…' : 'Create account'}
+              {loading ? t('register.submitting') : t('register.submit')}
             </Button>
             <p style={{ textAlign: 'center', fontSize: '0.875rem' }}>
-              Already have an account?{' '}
+              {t('register.haveAccount')}{' '}
               <Link to="/login" style={{ color: '#006FEE' }}>
-                Sign in
+                {t('register.signIn')}
               </Link>
             </p>
           </form>

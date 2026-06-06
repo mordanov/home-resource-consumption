@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Chip } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { BillTable } from '../components/BillTable'
 import { BillDetailModal } from '../components/BillDetailModal'
 import { ExportModal } from '../components/ExportModal'
@@ -22,6 +23,7 @@ interface PaginatedBills {
 const PAGE_SIZE = 20
 
 export function BillsPage() {
+  const { t } = useTranslation()
   const [resourceFilter, setResourceFilter] = useState<ResourceFilter>('ALL')
   const [page, setPage] = useState(1)
   const [selectedBill, setSelectedBill] = useState<BillRead | null>(null)
@@ -47,16 +49,23 @@ export function BillsPage() {
     setPage(1)
   }
 
+  const filterLabels: Record<ResourceFilter, string> = {
+    ALL: t('bills.filterAll'),
+    ELECTRICITY: 'ELECTRICITY',
+    GAS: 'GAS',
+    WATER: 'WATER',
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Bill History</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>{t('bills.title')}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="flat" onPress={() => setExportOpen(true)}>
-            Export PDF
+            {t('bills.exportPdf')}
           </Button>
           <Button as={Link} to="/upload" color="primary">
-            Upload Bill
+            {t('bills.uploadBill')}
           </Button>
         </div>
       </div>
@@ -74,13 +83,13 @@ export function BillsPage() {
               f === 'WATER' ? 'primary' : 'default'
             }
           >
-            {f}
+            {filterLabels[f]}
           </Chip>
         ))}
       </div>
 
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48, color: '#687076' }}>Loading…</div>
+        <div style={{ textAlign: 'center', padding: 48, color: '#687076' }}>{t('bills.loading')}</div>
       ) : (
         <BillTable
           bills={data?.items ?? []}

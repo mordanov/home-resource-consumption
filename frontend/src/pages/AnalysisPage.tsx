@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Card, CardBody, CardHeader, Button, Chip, Spinner } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { ConsumptionTrendChart } from '../components/charts/ConsumptionTrendChart'
 import { MonthlyCostChart } from '../components/charts/MonthlyCostChart'
 import { PricePerUnitChart } from '../components/charts/PricePerUnitChart'
@@ -33,6 +34,7 @@ function defaultDateFrom() {
 }
 
 export function AnalysisPage() {
+  const { t } = useTranslation()
   const [resourceFilter, setResourceFilter] = useState<ResourceFilter>('ALL')
   const [dateFrom, setDateFrom] = useState(defaultDateFrom)
   const [dateTo, setDateTo] = useState(() => toDateStr(new Date()))
@@ -55,13 +57,12 @@ export function AnalysisPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Analysis</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>{t('analysis.title')}</h1>
         <Button color="primary" onPress={() => setExportOpen(true)}>
-          Export Full Report
+          {t('analysis.exportReport')}
         </Button>
       </div>
 
-      {/* Filters */}
       <Card style={{ marginBottom: 24 }}>
         <CardBody>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -79,7 +80,7 @@ export function AnalysisPage() {
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <label style={{ fontSize: '0.875rem' }}>
-                From{' '}
+                {t('analysis.from')}{' '}
                 <input
                   type="date"
                   value={dateFrom}
@@ -88,7 +89,7 @@ export function AnalysisPage() {
                 />
               </label>
               <label style={{ fontSize: '0.875rem' }}>
-                To{' '}
+                {t('analysis.to')}{' '}
                 <input
                   type="date"
                   value={dateTo}
@@ -108,32 +109,32 @@ export function AnalysisPage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: 24 }}>
           <Card>
-            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Consumption trend</h2></CardHeader>
+            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.trendTitle')}</h2></CardHeader>
             <CardBody><ConsumptionTrendChart data={data?.monthly_consumption ?? []} /></CardBody>
           </Card>
 
           <Card>
-            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Monthly cost</h2></CardHeader>
+            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.costTitle')}</h2></CardHeader>
             <CardBody><MonthlyCostChart data={data?.monthly_cost ?? []} /></CardBody>
           </Card>
 
           <Card>
-            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Price per unit</h2></CardHeader>
+            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.priceTitle')}</h2></CardHeader>
             <CardBody><PricePerUnitChart data={data?.price_per_unit ?? []} /></CardBody>
           </Card>
 
           <Card>
-            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Year-over-year</h2></CardHeader>
+            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.yoyTitle')}</h2></CardHeader>
             <CardBody><YearOverYearChart data={data?.year_over_year ?? []} /></CardBody>
           </Card>
 
           <Card>
-            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Cumulative cost (YTD)</h2></CardHeader>
+            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.cumulativeTitle')}</h2></CardHeader>
             <CardBody><CumulativeCostChart data={data?.cumulative_cost_ytd ?? []} /></CardBody>
           </Card>
 
           <Card>
-            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Consumption heatmap</h2></CardHeader>
+            <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.heatmapTitle')}</h2></CardHeader>
             <CardBody><ConsumptionHeatmap data={data?.consumption_heatmap ?? {}} /></CardBody>
           </Card>
         </div>

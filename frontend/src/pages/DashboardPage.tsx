@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Card, CardBody, CardHeader, Button, Spinner } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import axiosInstance from '../lib/axios'
 import { queryKeys } from '../lib/queryKeys'
@@ -14,6 +15,7 @@ function TrendArrow({ trend }: { trend: 'up' | 'down' | 'neutral' }) {
 }
 
 function ResourceCard({ resourceType }: { resourceType: string }) {
+  const { t } = useTranslation()
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.bills.list({ resource_type: resourceType, page: 1, size: 2 }),
     queryFn: async () => {
@@ -48,12 +50,12 @@ function ResourceCard({ resourceType }: { resourceType: string }) {
       </CardHeader>
       <CardBody>
         {!latest ? (
-          <p style={{ color: '#687076', fontSize: '0.875rem' }}>No bills yet.</p>
+          <p style={{ color: '#687076', fontSize: '0.875rem' }}>{t('dashboard.noBills')}</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.875rem' }}>
-            <span>Last bill: {latest.bill_date}</span>
-            <span>Consumed: {latest.amount_consumed} {latest.unit}</span>
-            <span>Paid: {latest.amount_paid} {latest.currency}</span>
+            <span>{t('dashboard.lastBill', { date: latest.bill_date })}</span>
+            <span>{t('dashboard.consumed', { value: latest.amount_consumed, unit: latest.unit })}</span>
+            <span>{t('dashboard.paid', { value: latest.amount_paid, currency: latest.currency })}</span>
           </div>
         )}
       </CardBody>
@@ -62,6 +64,7 @@ function ResourceCard({ resourceType }: { resourceType: string }) {
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: queryKeys.analytics.summary({}),
     queryFn: async () => {
@@ -80,9 +83,9 @@ export function DashboardPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Dashboard</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>{t('dashboard.title')}</h1>
         <Button as={Link} to="/upload" color="primary">
-          Upload Bill
+          {t('dashboard.uploadBill')}
         </Button>
       </div>
 
@@ -94,7 +97,7 @@ export function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Consumption trend (last 12 months)</h2>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('dashboard.trendTitle')}</h2>
         </CardHeader>
         <CardBody>
           {analyticsLoading ? (
@@ -103,7 +106,9 @@ export function DashboardPage() {
             </div>
           ) : chartData.length === 0 ? (
             <p style={{ color: '#687076', textAlign: 'center', padding: 32 }}>
-              No data yet. <Link to="/upload" style={{ color: '#006FEE' }}>Upload your first bill</Link> to see trends.
+              {t('dashboard.noData')}{' '}
+              <Link to="/upload" style={{ color: '#006FEE' }}>{t('dashboard.uploadFirst')}</Link>
+              {t('dashboard.uploadFirstSuffix')}
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
@@ -113,9 +118,9 @@ export function DashboardPage() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="electricity" stroke="#f5a524" name="Electricity" dot={false} />
-                <Line type="monotone" dataKey="gas" stroke="#f31260" name="Gas" dot={false} />
-                <Line type="monotone" dataKey="water" stroke="#006FEE" name="Water" dot={false} />
+                <Line type="monotone" dataKey="electricity" stroke="#f5a524" name={t('dashboard.electricity')} dot={false} />
+                <Line type="monotone" dataKey="gas" stroke="#f31260" name={t('dashboard.gas')} dot={false} />
+                <Line type="monotone" dataKey="water" stroke="#006FEE" name={t('dashboard.water')} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           )}

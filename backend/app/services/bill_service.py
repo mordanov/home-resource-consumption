@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.exceptions import FileTooLargeError, ParseError
 from app.domain.enums import ResourceType
 from app.domain.models import Bill
-from app.domain.schemas import BillPreview, BillRead
+from app.domain.schemas import BillPreview, BillRead, BillUpdate
 from app.repositories.bill_repository import BillRepository
 from app.services.parser.parser_factory import ParserFactory
 
@@ -96,6 +96,31 @@ class BillService:
         bill = await self.bill_repo.get_active(bill_id, user_id)
         if not bill:
             raise ResourceNotFoundError("Bill", str(bill_id))
+        return BillRead.model_validate(bill)
+
+    async def update(self, bill_id: UUID, user_id: UUID, data: BillUpdate) -> BillRead:
+        from app.core.exceptions import ResourceNotFoundError
+
+        bill = await self.bill_repo.get_active(bill_id, user_id)
+        if not bill:
+            raise ResourceNotFoundError("Bill", str(bill_id))
+        if data.resource_type is not None:
+            bill.resource_type = data.resource_type.value
+        if data.bill_date is not None:
+            bill.bill_date = data.bill_date
+        if data.period_start is not None:
+            bill.period_start = data.period_start
+        if data.period_end is not None:
+            bill.period_end = data.period_end
+        if data.amount_consumed is not None:
+            bill.amount_consumed = float(data.amount_consumed)
+        if data.unit is not None:
+            bill.unit = data.unit.value
+        if data.amount_paid is not None:
+            bill.amount_paid = float(data.amount_paid)
+        if data.currency is not None:
+            bill.currency = data.currency
+        await self.bill_repo.update(bill)
         return BillRead.model_validate(bill)
 
     async def delete(self, bill_id: UUID, user_id: UUID) -> str | None:

@@ -1,11 +1,21 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Button } from '@heroui/react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 import axiosInstance from '../lib/axios'
 
+const LANGS = ['en', 'ru', 'es'] as const
+type Lang = typeof LANGS[number]
+
 export function Layout() {
+  const { t, i18n } = useTranslation()
   const { user, clearAuth } = useAuthStore()
   const navigate = useNavigate()
+
+  function switchLang(lang: Lang) {
+    i18n.changeLanguage(lang)
+    localStorage.setItem('lang', lang)
+  }
 
   async function handleLogout() {
     try {
@@ -17,21 +27,23 @@ export function Layout() {
     navigate('/login')
   }
 
+  const navLinks = [
+    { to: '/', key: 'nav.dashboard' },
+    { to: '/bills', key: 'nav.bills' },
+    { to: '/upload', key: 'nav.upload' },
+    { to: '/predictions', key: 'nav.predictions' },
+    { to: '/analysis', key: 'nav.analysis' },
+  ] as const
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar isBordered>
         <NavbarBrand>
-          <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>Resource Tracker</span>
+          <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{t('nav.brand')}</span>
         </NavbarBrand>
 
         <NavbarContent className="hidden sm:flex gap-4" justify="center">
-          {[
-            { to: '/', label: 'Dashboard' },
-            { to: '/bills', label: 'Bills' },
-            { to: '/upload', label: 'Upload' },
-            { to: '/predictions', label: 'Predictions' },
-            { to: '/analysis', label: 'Analysis' },
-          ].map(({ to, label }) => (
+          {navLinks.map(({ to, key }) => (
             <NavbarItem key={to}>
               <NavLink
                 to={to}
@@ -42,7 +54,7 @@ export function Layout() {
                   textDecoration: 'none',
                 })}
               >
-                {label}
+                {t(key)}
               </NavLink>
             </NavbarItem>
           ))}
@@ -50,13 +62,28 @@ export function Layout() {
 
         <NavbarContent justify="end">
           <NavbarItem>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {LANGS.map((lang) => (
+                <Button
+                  key={lang}
+                  size="sm"
+                  variant={i18n.language === lang ? 'solid' : 'flat'}
+                  onPress={() => switchLang(lang)}
+                  style={{ minWidth: 36, padding: '0 8px', fontWeight: 600, textTransform: 'uppercase' }}
+                >
+                  {lang}
+                </Button>
+              ))}
+            </div>
+          </NavbarItem>
+          <NavbarItem>
             <span style={{ fontSize: '0.875rem', color: '#687076', marginRight: 8 }}>
               {user?.username}
             </span>
           </NavbarItem>
           <NavbarItem>
             <Button size="sm" variant="flat" color="danger" onPress={handleLogout}>
-              Logout
+              {t('nav.logout')}
             </Button>
           </NavbarItem>
         </NavbarContent>

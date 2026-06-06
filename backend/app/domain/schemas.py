@@ -98,6 +98,17 @@ class BillPreview(BillBase):
     raw_text: str | None = None
 
 
+class BillUpdate(BaseModel):
+    resource_type: ResourceType | None = None
+    bill_date: date | None = None
+    period_start: date | None = None
+    period_end: date | None = None
+    amount_consumed: Decimal | None = Field(default=None, gt=0, decimal_places=4)
+    unit: Unit | None = None
+    amount_paid: Decimal | None = Field(default=None, ge=0, decimal_places=4)
+    currency: str | None = Field(default=None, min_length=3, max_length=3)
+
+
 # ── Prediction ────────────────────────────────────────────────────────────────
 
 
