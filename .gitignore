@@ -1,0 +1,53 @@
+# Environment and secrets — NEVER commit these
+.env
+*.env
+!.env.example
+*/credentials.json
+**/credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker volumes and uploads
+uploads/
+*.tar
+*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# SQLite metrics DB (local dev)
+scripts/*.db
+project-administrator/*.db

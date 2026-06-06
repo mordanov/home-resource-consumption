@@ -1,0 +1,126 @@
+import { Link } from 'react-router-dom'
+import { Card, CardBody, CardHeader, Button, Spinner } from '@heroui/react'
+import { useQuery } from '@tanstack/react-query'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import axiosInstance from '../lib/axios'
+import { queryKeys } from '../lib/queryKeys'
+import type { BillRead } from '../components/BillTable'
+import type { AnalyticsSummary } from './AnalysisPage'
+
+function TrendArrow({ trend }: { trend: 'up' | 'down' | 'neutral' }) {
+  if (trend === 'up') return <span style={{ color: '#f31260' }}>↑</span>
+  if (trend === 'down') return <span style={{ color: '#17c964' }}>↓</span>
+  return <span style={{ color: '#687076' }}>→</span>
+}
+
+function ResourceCard({ resourceType }: { resourceType: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.bills.list({ resource_type: resourceType, page: 1, size: 2 }),
+    queryFn: async () => {
+      const res = await axiosInstance.get<{ items: BillRead[] }>('/bills/', {
+        params: { resource_type: resourceType, page: 1, size: 2 },
+      })
+      return res.data.items
+    },
+  })
+
+  if (isLoading) return <Card><CardBody><Spinner size="sm" /></CardBody></Card>
+
+  const latest = data?.[0]
+  const previous = data?.[1]
+  const trend: 'up' | 'down' | 'neutral' =
+    !latest || !previous
+      ? 'neutral'
+      : Number(latest.amount_consumed) > Number(previous.amount_consumed)
+      ? 'up'
+      : Number(latest.amount_consumed) < Number(previous.amount_consumed)
+      ? 'down'
+      : 'neutral'
+
+  const icons: Record<string, string> = { ELECTRICITY: '⚡', GAS: '🔥', WATER: '💧' }
+
+  return (
+    <Card>
+      <CardHeader style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <span style={{ fontSize: '1.5rem' }}>{icons[resourceType] ?? '📊'}</span>
+        <span style={{ fontWeight: 600 }}>{resourceType}</span>
+        {latest && <TrendArrow trend={trend} />}
+      </CardHeader>
+      <CardBody>
+        {!latest ? (
+          <p style={{ color: '#687076', fontSize: '0.875rem' }}>No bills yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.875rem' }}>
+            <span>Last bill: {latest.bill_date}</span>
+            <span>Consumed: {latest.amount_consumed} {latest.unit}</span>
+            <span>Paid: {latest.amount_paid} {latest.currency}</span>
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  )
+}
+
+export function DashboardPage() {
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: queryKeys.analytics.summary({}),
+    queryFn: async () => {
+      const res = await axiosInstance.get<AnalyticsSummary>('/analytics/summary')
+      return res.data
+    },
+  })
+
+  const chartData = analytics?.monthly_consumption?.map((item) => ({
+    month: item.month,
+    electricity: item.ELECTRICITY,
+    gas: item.GAS,
+    water: item.WATER,
+  })) ?? []
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Dashboard</h1>
+        <Button as={Link} to="/upload" color="primary">
+          Upload Bill
+        </Button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
+        {['ELECTRICITY', 'GAS', 'WATER'].map((rt) => (
+          <ResourceCard key={rt} resourceType={rt} />
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Consumption trend (last 12 months)</h2>
+        </CardHeader>
+        <CardBody>
+          {analyticsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+              <Spinner />
+            </div>
+          ) : chartData.length === 0 ? (
+            <p style={{ color: '#687076', textAlign: 'center', padding: 32 }}>
+              No data yet. <Link to="/upload" style={{ color: '#006FEE' }}>Upload your first bill</Link> to see trends.
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="electricity" stroke="#f5a524" name="Electricity" dot={false} />
+                <Line type="monotone" dataKey="gas" stroke="#f31260" name="Gas" dot={false} />
+                <Line type="monotone" dataKey="water" stroke="#006FEE" name="Water" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardBody>
+      </Card>
+    </div>
+  )
+}
