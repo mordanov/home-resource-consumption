@@ -17,10 +17,10 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.30",
     "asyncpg>=0.29.0",
     "alembic>=1.13.1",
-    "pydantic>=2.7.1",
+    "pydantic[email]>=2.7.1",
     "pydantic-settings>=2.2.1",
     "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0",
     "python-multipart>=0.0.9",
     "pymupdf>=1.24.3",
     "pytesseract>=0.3.10",
@@ -46,7 +46,7 @@ dev = [
     "anyio>=4.4.0",
     "mypy>=1.10.0",
     "ruff>=0.4.7",
-    "types-passlib>=1.7.7",
+    "types-bcrypt>=4.0.0",
 ]
 
 [tool.ruff]

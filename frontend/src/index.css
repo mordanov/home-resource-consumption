@@ -1,3 +1,6 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

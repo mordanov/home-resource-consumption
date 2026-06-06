@@ -32,10 +32,8 @@ export function LoginPage() {
     setCredError(null)
     setLoading(true)
     try {
-      const { data } = await axiosInstance.post<LoginResponse>('/auth/login', {
-        username,
-        password,
-      })
+      const form = new URLSearchParams({ username, password })
+      const { data } = await axiosInstance.post<LoginResponse>('/auth/login', form)
       setTokens(data.access_token, data.user)
       navigate('/')
     } catch (err) {

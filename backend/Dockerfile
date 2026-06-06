@@ -23,6 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY alembic.ini ./
 COPY alembic/ ./alembic/
 COPY app/ ./app/
+COPY scripts/ ./scripts/
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
@@ -30,4 +31,4 @@ RUN mkdir -p /app/uploads
 EXPOSE 8000
 
 # Run migrations then start the server
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && PYTHONPATH=/app python scripts/create_user.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
