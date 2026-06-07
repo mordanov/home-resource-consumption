@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Button, Chip } from '@heroui/react'
+import { ViewToggle } from './ViewToggle'
+import { ChartDataTable } from './ChartDataTable'
 
 interface DataPoint {
   month: string
@@ -14,6 +16,7 @@ interface Props {
 }
 
 type Resource = 'ELECTRICITY' | 'GAS' | 'WATER'
+type View = 'chart' | 'table'
 
 const COLORS: Record<Resource, string> = {
   ELECTRICITY: '#f5a524',
@@ -21,8 +24,16 @@ const COLORS: Record<Resource, string> = {
   WATER: '#006FEE',
 }
 
+const TABLE_COLS = [
+  { key: 'month', label: 'Month', align: 'left' as const },
+  { key: 'ELECTRICITY', label: 'Electricity (unit/day)' },
+  { key: 'GAS', label: 'Gas (unit/day)' },
+  { key: 'WATER', label: 'Water (unit/day)' },
+]
+
 export function ConsumptionTrendChart({ data }: Props) {
   const [active, setActive] = useState<Set<Resource>>(new Set(['ELECTRICITY', 'GAS', 'WATER']))
+  const [view, setView] = useState<View>('chart')
   const ref = useRef<HTMLDivElement>(null)
 
   function toggleResource(r: Resource) {
@@ -66,24 +77,35 @@ export function ConsumptionTrendChart({ data }: Props) {
             {r}
           </Chip>
         ))}
-        <Button size="sm" variant="flat" onPress={exportPng} style={{ marginLeft: 'auto' }}>
-          Export PNG
-        </Button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          <ViewToggle view={view} onChange={setView} />
+          {view === 'chart' && (
+            <Button size="sm" variant="flat" onPress={exportPng}>Export PNG</Button>
+          )}
+        </div>
       </div>
-      <div ref={ref}>
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip formatter={(v: number) => v.toFixed(3)} />
-            <Legend />
-            {(['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).filter((r) => active.has(r)).map((r) => (
-              <Line key={r} type="monotone" dataKey={r} stroke={COLORS[r]} dot={false} />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {view === 'chart' ? (
+        <div ref={ref}>
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(v: number) => v.toFixed(3)} />
+              <Legend />
+              {(['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).filter((r) => active.has(r)).map((r) => (
+                <Line key={r} type="monotone" dataKey={r} stroke={COLORS[r]} dot={false} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <ChartDataTable
+          columns={TABLE_COLS}
+          rows={data as Record<string, unknown>[]}
+          formatValue={(v, k) => k === 'month' ? String(v) : v == null ? '—' : (v as number).toFixed(3)}
+        />
+      )}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 import { Button, Chip } from '@heroui/react'
+import { ViewToggle } from './ViewToggle'
+import { ChartDataTable } from './ChartDataTable'
 
 interface HeatmapCell {
   month: string
@@ -11,6 +13,12 @@ interface Props {
 }
 
 type Resource = 'ELECTRICITY' | 'GAS' | 'WATER'
+type View = 'chart' | 'table'
+
+const TABLE_COLS = [
+  { key: 'month', label: 'Month', align: 'left' as const },
+  { key: 'value', label: 'Avg daily consumption' },
+]
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
@@ -27,6 +35,7 @@ function valueToColor(value: number, min: number, max: number): string {
 
 export function ConsumptionHeatmap({ data }: Props) {
   const [resource, setResource] = useState<Resource>('ELECTRICITY')
+  const [view, setView] = useState<View>('chart')
   const ref = useRef<HTMLDivElement>(null)
 
   const cells = data[resource] ?? []
@@ -58,33 +67,46 @@ export function ConsumptionHeatmap({ data }: Props) {
             {r}
           </Chip>
         ))}
-        <Button size="sm" variant="flat" onPress={exportData} style={{ marginLeft: 'auto' }}>
-          Export
-        </Button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          <ViewToggle view={view} onChange={setView} />
+          {view === 'chart' && (
+            <Button size="sm" variant="flat" onPress={exportData}>Export</Button>
+          )}
+        </div>
       </div>
-      <div ref={ref} style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4 }}>
-        {cells.map((cell) => (
-          <div
-            key={cell.month}
-            title={`${cell.month}: ${cell.value.toFixed(3)}`}
-            style={{
-              background: valueToColor(cell.value, min, max),
-              borderRadius: 6,
-              padding: '12px 4px',
-              textAlign: 'center',
-              fontSize: '0.7rem',
-              color: '#11181c',
-            }}
-          >
-            <div style={{ fontWeight: 600 }}>{cell.month.slice(-5)}</div>
-            <div>{cell.value.toFixed(3)}</div>
+      {view === 'chart' ? (
+        <>
+          <div ref={ref} style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4 }}>
+            {cells.map((cell) => (
+              <div
+                key={cell.month}
+                title={`${cell.month}: ${cell.value.toFixed(3)}`}
+                style={{
+                  background: valueToColor(cell.value, min, max),
+                  borderRadius: 6,
+                  padding: '12px 4px',
+                  textAlign: 'center',
+                  fontSize: '0.7rem',
+                  color: '#11181c',
+                }}
+              >
+                <div style={{ fontWeight: 600 }}>{cell.month.slice(-5)}</div>
+                <div>{cell.value.toFixed(3)}</div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 8, fontSize: '0.75rem', color: '#687076' }}>
-        <span style={{ background: valueToColor(min, min, max), borderRadius: 3, padding: '2px 8px' }}>Low</span>
-        <span style={{ background: valueToColor(max, min, max), borderRadius: 3, padding: '2px 8px', color: '#fff' }}>High</span>
-      </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, fontSize: '0.75rem', color: '#687076' }}>
+            <span style={{ background: valueToColor(min, min, max), borderRadius: 3, padding: '2px 8px' }}>Low</span>
+            <span style={{ background: valueToColor(max, min, max), borderRadius: 3, padding: '2px 8px', color: '#fff' }}>High</span>
+          </div>
+        </>
+      ) : (
+        <ChartDataTable
+          columns={TABLE_COLS}
+          rows={cells as Record<string, unknown>[]}
+          formatValue={(v, k) => k === 'month' ? String(v) : (v as number).toFixed(3)}
+        />
+      )}
     </div>
   )
 }

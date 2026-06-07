@@ -3,6 +3,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { Button, Chip } from '@heroui/react'
+import { ViewToggle } from './ViewToggle'
+import { ChartDataTable } from './ChartDataTable'
 
 interface MonthlyYoYPointRaw {
   month: string
@@ -21,6 +23,7 @@ interface Props {
 
 type Mode = 'consumption' | 'cost'
 type Resource = 'ELECTRICITY' | 'GAS' | 'WATER'
+type View = 'chart' | 'table'
 
 const COLORS: Record<Resource, string> = {
   ELECTRICITY: '#f5a524',
@@ -50,6 +53,7 @@ function exportPng(ref: React.RefObject<HTMLDivElement | null>, filename: string
 
 export function MonthlyYoYChart({ data }: Props) {
   const [mode, setMode] = useState<Mode>('consumption')
+  const [view, setView] = useState<View>('chart')
   const availableResources = (['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).filter(
     (r) => data.some((d) => d.resource_type === r),
   )
@@ -76,6 +80,14 @@ export function MonthlyYoYChart({ data }: Props) {
 
   const hasAnyPrev = chartData.some((d) => d.prev != null)
 
+  const tableLabel = mode === 'consumption' ? 'avg/day' : 'cost'
+  const tableCols = [
+    { key: 'month', label: 'Month', align: 'left' as const },
+    { key: 'current', label: `Current (${tableLabel})` },
+    { key: 'prev', label: `Year ago (${tableLabel})` },
+    { key: 'pct', label: 'Change %' },
+  ]
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -92,7 +104,7 @@ export function MonthlyYoYChart({ data }: Props) {
             {r}
           </Chip>
         ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           <Chip
             style={{ cursor: 'pointer' }}
             variant={mode === 'consumption' ? 'solid' : 'flat'}
@@ -107,9 +119,12 @@ export function MonthlyYoYChart({ data }: Props) {
           >
             Cost
           </Chip>
-          <Button size="sm" variant="flat" onPress={() => exportPng(ref, `monthly-yoy-${resource}-${mode}.png`)}>
-            Export PNG
-          </Button>
+          <ViewToggle view={view} onChange={setView} />
+          {view === 'chart' && (
+            <Button size="sm" variant="flat" onPress={() => exportPng(ref, `monthly-yoy-${resource}-${mode}.png`)}>
+              Export PNG
+            </Button>
+          )}
         </div>
       </div>
       {!hasData && (
@@ -117,45 +132,58 @@ export function MonthlyYoYChart({ data }: Props) {
           No data for {resource} in the selected period.
         </p>
       )}
-      <div ref={ref} style={{ display: hasData ? undefined : 'none' }}>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={chartData} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis yAxisId="val" />
-            {chartData.some((d) => d.pct != null) && (
-              <YAxis yAxisId="pct" orientation="right" tickFormatter={(v) => `${v}%`} />
-            )}
-            <Tooltip
-              formatter={(value: number, name: string) =>
-                name === 'Change %' ? [`${value > 0 ? '+' : ''}${value.toFixed(1)}%`, name] : [value.toFixed(2), name]
-              }
-            />
-            <Legend />
-            <Bar yAxisId="val" dataKey="current" name="Current year" fill={COLORS[resource]} />
-            {hasAnyPrev && (
-              <Bar yAxisId="val" dataKey="prev" name="Year ago" fill="#a1a1aa" />
-            )}
-            {chartData.some((d) => d.pct != null) && (
-              <>
-                <ReferenceLine yAxisId="pct" y={0} stroke="#687076" strokeDasharray="3 3" />
-                <Bar
-                  yAxisId="pct"
-                  dataKey="pct"
-                  name="Change %"
-                  fill="none"
-                  stroke="#17c964"
-                  label={{
-                    position: 'top',
-                    fontSize: 10,
-                    formatter: (v: number) => v != null ? `${v > 0 ? '+' : ''}${v.toFixed(0)}%` : '',
-                  }}
-                />
-              </>
-            )}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {hasData && view === 'chart' && (
+        <div ref={ref}>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={chartData} barCategoryGap="20%">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis yAxisId="val" />
+              {chartData.some((d) => d.pct != null) && (
+                <YAxis yAxisId="pct" orientation="right" tickFormatter={(v) => `${v}%`} />
+              )}
+              <Tooltip
+                formatter={(value: number, name: string) =>
+                  name === 'Change %' ? [`${value > 0 ? '+' : ''}${value.toFixed(1)}%`, name] : [value.toFixed(2), name]
+                }
+              />
+              <Legend />
+              <Bar yAxisId="val" dataKey="current" name="Current year" fill={COLORS[resource]} />
+              {hasAnyPrev && (
+                <Bar yAxisId="val" dataKey="prev" name="Year ago" fill="#a1a1aa" />
+              )}
+              {chartData.some((d) => d.pct != null) && (
+                <>
+                  <ReferenceLine yAxisId="pct" y={0} stroke="#687076" strokeDasharray="3 3" />
+                  <Bar
+                    yAxisId="pct"
+                    dataKey="pct"
+                    name="Change %"
+                    fill="none"
+                    stroke="#17c964"
+                    label={{
+                      position: 'top',
+                      fontSize: 10,
+                      formatter: (v: number) => v != null ? `${v > 0 ? '+' : ''}${v.toFixed(0)}%` : '',
+                    }}
+                  />
+                </>
+              )}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {hasData && view === 'table' && (
+        <ChartDataTable
+          columns={tableCols}
+          rows={chartData as Record<string, unknown>[]}
+          formatValue={(v, k) => {
+            if (k === 'month') return String(v)
+            if (k === 'pct') return v == null ? '—' : `${(v as number) > 0 ? '+' : ''}${(v as number).toFixed(1)}%`
+            return v == null ? '—' : (v as number).toFixed(mode === 'consumption' ? 3 : 2)
+          }}
+        />
+      )}
     </div>
   )
 }
