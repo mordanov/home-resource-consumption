@@ -176,7 +176,6 @@ class MonthlyYoYPoint(BaseModel):
 
 
 class AnalyticsSummary(BaseModel):
-    monthly_consumption: list[MonthlyDataPoint]
     daily_consumption: list[MonthlyDataPoint]
     monthly_cost: list[MonthlyDataPoint]
     price_per_unit: list[MonthlyDataPoint]

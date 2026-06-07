@@ -43,7 +43,6 @@ interface MonthlyYoYPointRaw {
 }
 
 export interface AnalyticsSummary {
-  monthly_consumption: MonthlyDataPointRaw[]
   daily_consumption: MonthlyDataPointRaw[]
   monthly_cost: MonthlyDataPointRaw[]
   price_per_unit: MonthlyDataPointRaw[]
@@ -181,10 +180,7 @@ export function AnalysisPage() {
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.trendTitle')}</h2></CardHeader>
             <CardBody>
-              <ConsumptionTrendChart
-                totalData={pivotMonthly(data?.monthly_consumption ?? [])}
-                dailyData={pivotMonthly(data?.daily_consumption ?? [])}
-              />
+              <ConsumptionTrendChart data={pivotMonthly(data?.daily_consumption ?? [])} />
             </CardBody>
           </Card>
 
@@ -211,10 +207,7 @@ export function AnalysisPage() {
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.heatmapTitle')}</h2></CardHeader>
             <CardBody>
-              <ConsumptionHeatmap
-                totalData={data ? buildHeatmap(data.monthly_consumption) : {}}
-                dailyData={data ? buildHeatmap(data.daily_consumption) : {}}
-              />
+              <ConsumptionHeatmap data={data ? buildHeatmap(data.daily_consumption) : {}} />
             </CardBody>
           </Card>
 

@@ -15,7 +15,12 @@ from app.domain.schemas import (
     YearOverYearPoint,
 )
 
-_PERIOD_DAYS = "(period_end - period_start + 1)"
+# Days in the calendar month the bill_date falls in.
+_MONTH_DAYS = (
+    "DATE_PART('day',"
+    " DATE_TRUNC('month', bill_date) + INTERVAL '1 month'"
+    " - DATE_TRUNC('month', bill_date))"
+)
 
 _RT_FILTER = "AND resource_type = :resource_type"
 
@@ -40,7 +45,6 @@ class AnalyticsService:
         if resource_type:
             params["resource_type"] = resource_type.value
 
-        monthly_consumption = await self._monthly_consumption(params, rt_clause)
         daily_consumption = await self._daily_consumption(params, rt_clause)
         monthly_cost = await self._monthly_cost(params, rt_clause)
         price_per_unit = await self._price_per_unit(params, rt_clause)
@@ -48,7 +52,6 @@ class AnalyticsService:
         cumulative = await self._cumulative_cost_ytd(params, rt_clause)
         monthly_yoy = await self._monthly_yoy(params, rt_clause)
         return AnalyticsSummary(
-            monthly_consumption=monthly_consumption,
             daily_consumption=daily_consumption,
             monthly_cost=monthly_cost,
             price_per_unit=price_per_unit,
@@ -57,44 +60,19 @@ class AnalyticsService:
             monthly_yoy=monthly_yoy,
         )
 
-    async def _monthly_consumption(
-        self, params: dict[str, object], rt_clause: str
-    ) -> list[MonthlyDataPoint]:
-        sql = text(
-            "SELECT to_char(date_trunc('month', bill_date), 'YYYY-MM') AS month,"
-            " resource_type,"
-            " SUM(amount_consumed) AS value"
-            " FROM bills"
-            " WHERE user_id = :user_id"
-            " AND deleted_at IS NULL"
-            " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause + " GROUP BY 1, 2"
-            " ORDER BY 1, 2"
-        )
-        rows = (await self.db.execute(sql, params)).fetchall()
-        return [
-            MonthlyDataPoint(
-                month=r.month,
-                resource_type=ResourceType(r.resource_type),
-                value=Decimal(str(r.value)),
-            )
-            for r in rows
-        ]
-
     async def _daily_consumption(
         self, params: dict[str, object], rt_clause: str
     ) -> list[MonthlyDataPoint]:
+        """Average consumption per calendar day within each month."""
         sql = text(
             "SELECT to_char(date_trunc('month', bill_date), 'YYYY-MM') AS month,"
             " resource_type,"
-            " CASE WHEN SUM(" + _PERIOD_DAYS + ") > 0"
-            " THEN SUM(amount_consumed) / SUM(" + _PERIOD_DAYS + ")"
-            " ELSE 0 END AS value"
+            " SUM(amount_consumed) / " + _MONTH_DAYS + " AS value"
             " FROM bills"
             " WHERE user_id = :user_id"
             " AND deleted_at IS NULL"
             " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause + " GROUP BY 1, 2"
+            " " + rt_clause + " GROUP BY 1, 2, date_trunc('month', bill_date)"
             " ORDER BY 1, 2"
         )
         rows = (await self.db.execute(sql, params)).fetchall()
@@ -226,23 +204,30 @@ class AnalyticsService:
         ]
 
     def _monthly_yoy_sql(self, rt_clause: str) -> TextClause:
+        # Consumption is normalised to daily average using calendar-month days.
+        month_days_expr = (
+            "DATE_PART('day',"
+            " DATE_TRUNC('month', bill_date) + INTERVAL '1 month'"
+            " - DATE_TRUNC('month', bill_date))"
+        )
         return text(
             "WITH current_period AS ("
             " SELECT to_char(date_trunc('month', bill_date), 'YYYY-MM') AS month,"
             " resource_type,"
-            " SUM(amount_consumed) AS consumption,"
+            " SUM(amount_consumed) / " + month_days_expr + " AS consumption,"
             " SUM(amount_paid) AS cost"
             " FROM bills WHERE user_id = :user_id AND deleted_at IS NULL"
             " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause + " GROUP BY 1, 2"
+            " " + rt_clause + " GROUP BY 1, 2, date_trunc('month', bill_date)"
             "), prev_period AS ("
             " SELECT to_char("
             "  date_trunc('month', bill_date) + INTERVAL '1 year', 'YYYY-MM'"
             " ) AS month, resource_type,"
-            " SUM(amount_consumed) AS consumption, SUM(amount_paid) AS cost"
+            " SUM(amount_consumed) / " + month_days_expr + " AS consumption,"
+            " SUM(amount_paid) AS cost"
             " FROM bills WHERE user_id = :user_id AND deleted_at IS NULL"
             " AND bill_date BETWEEN :prev_date_from AND :prev_date_to"
-            " " + rt_clause + " GROUP BY 1, 2"
+            " " + rt_clause + " GROUP BY 1, 2, date_trunc('month', bill_date)"
             ") SELECT c.month, c.resource_type,"
             " c.consumption AS current_consumption,"
             " p.consumption AS prev_year_consumption,"
@@ -254,8 +239,12 @@ class AnalyticsService:
 
     @staticmethod
     def _make_yoy_point(r: Any) -> MonthlyYoYPoint:
-        curr_c = Decimal(str(r.current_consumption))
-        prev_c = Decimal(str(r.prev_year_consumption)) if r.prev_year_consumption else None
+        curr_c = Decimal(str(round(float(r.current_consumption), 4)))
+        prev_c = (
+            Decimal(str(round(float(r.prev_year_consumption), 4)))
+            if r.prev_year_consumption
+            else None
+        )
         curr_cost = Decimal(str(r.current_cost))
         prev_cost = Decimal(str(r.prev_year_cost)) if r.prev_year_cost else None
         c_pct = ((curr_c - prev_c) / prev_c * 100).quantize(Decimal("0.01")) if prev_c else None

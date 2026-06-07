@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, CardBody, CardHeader, Button, Chip, Spinner } from '@heroui/react'
+import { Card, CardBody, CardHeader, Button, Spinner } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -8,8 +7,6 @@ import axiosInstance from '../lib/axios'
 import { queryKeys } from '../lib/queryKeys'
 import type { BillRead } from '../components/BillTable'
 import type { AnalyticsSummary } from './AnalysisPage'
-
-type Mode = 'total' | 'daily'
 
 function TrendArrow({ trend }: { trend: 'up' | 'down' | 'neutral' }) {
   if (trend === 'up') return <span style={{ color: '#f31260' }}>↑</span>
@@ -81,7 +78,6 @@ function pivotForDashboard(pts: Array<{ month: string; resource_type: string; va
 
 export function DashboardPage() {
   const { t } = useTranslation()
-  const [mode, setMode] = useState<Mode>('total')
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: queryKeys.analytics.summary({}),
@@ -91,9 +87,7 @@ export function DashboardPage() {
     },
   })
 
-  const totalData = pivotForDashboard(analytics?.monthly_consumption ?? [])
-  const dailyData = pivotForDashboard(analytics?.daily_consumption ?? [])
-  const chartData = mode === 'daily' ? dailyData : totalData
+  const chartData = pivotForDashboard(analytics?.daily_consumption ?? [])
 
   return (
     <div>
@@ -111,24 +105,8 @@ export function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <CardHeader>
           <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('dashboard.trendTitle')}</h2>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <Chip
-              style={{ cursor: 'pointer' }}
-              variant={mode === 'total' ? 'solid' : 'flat'}
-              onClick={() => setMode('total')}
-            >
-              Total
-            </Chip>
-            <Chip
-              style={{ cursor: 'pointer' }}
-              variant={mode === 'daily' ? 'solid' : 'flat'}
-              onClick={() => setMode('daily')}
-            >
-              Per day
-            </Chip>
-          </div>
         </CardHeader>
         <CardBody>
           {analyticsLoading ? (
@@ -147,7 +125,7 @@ export function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(v: number) => v.toFixed(mode === 'daily' ? 3 : 1)} />
+                <Tooltip formatter={(v: number) => v.toFixed(3)} />
                 <Legend />
                 <Line type="monotone" dataKey="electricity" stroke="#f5a524" name={t('dashboard.electricity')} dot={false} />
                 <Line type="monotone" dataKey="gas" stroke="#f31260" name={t('dashboard.gas')} dot={false} />
