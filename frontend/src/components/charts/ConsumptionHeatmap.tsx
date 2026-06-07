@@ -103,7 +103,7 @@ export function ConsumptionHeatmap({ data }: Props) {
       ) : (
         <ChartDataTable
           columns={TABLE_COLS}
-          rows={cells as Record<string, unknown>[]}
+          rows={cells as unknown as Record<string, unknown>[]}
           formatValue={(v, k) => k === 'month' ? String(v) : (v as number).toFixed(3)}
         />
       )}
