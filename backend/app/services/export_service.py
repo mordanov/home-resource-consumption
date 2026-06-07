@@ -31,7 +31,7 @@ class ExportService:
         summary = await self.analytics.get_summary(
             spec.user_id, spec.date_from, spec.date_to, resource_type
         )
-        consumption_svg = self.chart_renderer.render_consumption_trend(summary.monthly_consumption)
+        consumption_svg = self.chart_renderer.render_consumption_trend(summary.daily_consumption)
         cost_svg = self.chart_renderer.render_monthly_cost(summary.monthly_cost)
         html_content = self._render_template(spec, summary, consumption_svg, cost_svg)
         from weasyprint import HTML  # lazy import — libgobject only available in Docker
