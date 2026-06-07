@@ -7,10 +7,12 @@ interface HeatmapCell {
 }
 
 interface Props {
-  data: Record<string, HeatmapCell[]>
+  totalData: Record<string, HeatmapCell[]>
+  dailyData: Record<string, HeatmapCell[]>
 }
 
 type Resource = 'ELECTRICITY' | 'GAS' | 'WATER'
+type Mode = 'total' | 'daily'
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
@@ -25,24 +27,25 @@ function valueToColor(value: number, min: number, max: number): string {
   return `rgb(${r},${g},${b})`
 }
 
-export function ConsumptionHeatmap({ data }: Props) {
+export function ConsumptionHeatmap({ totalData, dailyData }: Props) {
   const [resource, setResource] = useState<Resource>('ELECTRICITY')
+  const [mode, setMode] = useState<Mode>('total')
   const ref = useRef<HTMLDivElement>(null)
 
+  const data = mode === 'daily' ? dailyData : totalData
   const cells = data[resource] ?? []
   const values = cells.map((c) => c.value)
   const min = Math.min(...values)
   const max = Math.max(...values)
 
-  function exportPng() {
-    const div = ref.current
-    if (!div) return
-    // Simple text export as fallback — full canvas capture requires html2canvas
-    const text = cells.map((c) => `${c.month}: ${c.value}`).join('\n')
+  const decimals = mode === 'daily' ? 3 : 0
+
+  function exportData() {
+    const text = cells.map((c) => `${c.month}: ${c.value.toFixed(decimals)}`).join('\n')
     const blob = new Blob([text], { type: 'text/plain' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `heatmap-${resource.toLowerCase()}.txt`
+    a.download = `heatmap-${resource.toLowerCase()}-${mode}.txt`
     a.click()
   }
 
@@ -50,7 +53,7 @@ export function ConsumptionHeatmap({ data }: Props) {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         {(['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).map((r) => (
           <Chip
             key={r}
@@ -61,15 +64,31 @@ export function ConsumptionHeatmap({ data }: Props) {
             {r}
           </Chip>
         ))}
-        <Button size="sm" variant="flat" onPress={exportPng} style={{ marginLeft: 'auto' }}>
-          Export
-        </Button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          <Chip
+            style={{ cursor: 'pointer' }}
+            variant={mode === 'total' ? 'solid' : 'flat'}
+            onClick={() => setMode('total')}
+          >
+            Total
+          </Chip>
+          <Chip
+            style={{ cursor: 'pointer' }}
+            variant={mode === 'daily' ? 'solid' : 'flat'}
+            onClick={() => setMode('daily')}
+          >
+            Per day
+          </Chip>
+          <Button size="sm" variant="flat" onPress={exportData}>
+            Export
+          </Button>
+        </div>
       </div>
       <div ref={ref} style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4 }}>
         {cells.map((cell) => (
           <div
             key={cell.month}
-            title={`${cell.month}: ${cell.value}`}
+            title={`${cell.month}: ${cell.value.toFixed(decimals)}`}
             style={{
               background: valueToColor(cell.value, min, max),
               borderRadius: 6,
@@ -80,7 +99,7 @@ export function ConsumptionHeatmap({ data }: Props) {
             }}
           >
             <div style={{ fontWeight: 600 }}>{cell.month.slice(-5)}</div>
-            <div>{cell.value.toFixed(0)}</div>
+            <div>{cell.value.toFixed(decimals)}</div>
           </div>
         ))}
       </div>

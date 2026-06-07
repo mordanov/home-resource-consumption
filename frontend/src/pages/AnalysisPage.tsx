@@ -44,6 +44,7 @@ interface MonthlyYoYPointRaw {
 
 export interface AnalyticsSummary {
   monthly_consumption: MonthlyDataPointRaw[]
+  daily_consumption: MonthlyDataPointRaw[]
   monthly_cost: MonthlyDataPointRaw[]
   price_per_unit: MonthlyDataPointRaw[]
   year_over_year: YoYPointRaw[]
@@ -179,7 +180,12 @@ export function AnalysisPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: 24 }}>
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.trendTitle')}</h2></CardHeader>
-            <CardBody><ConsumptionTrendChart data={pivotMonthly(data?.monthly_consumption ?? [])} /></CardBody>
+            <CardBody>
+              <ConsumptionTrendChart
+                totalData={pivotMonthly(data?.monthly_consumption ?? [])}
+                dailyData={pivotMonthly(data?.daily_consumption ?? [])}
+              />
+            </CardBody>
           </Card>
 
           <Card>
@@ -204,7 +210,12 @@ export function AnalysisPage() {
 
           <Card>
             <CardHeader><h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('analysis.heatmapTitle')}</h2></CardHeader>
-            <CardBody><ConsumptionHeatmap data={data ? buildHeatmap(data.monthly_consumption) : {}} /></CardBody>
+            <CardBody>
+              <ConsumptionHeatmap
+                totalData={data ? buildHeatmap(data.monthly_consumption) : {}}
+                dailyData={data ? buildHeatmap(data.daily_consumption) : {}}
+              />
+            </CardBody>
           </Card>
 
           <Card style={{ gridColumn: '1 / -1' }}>

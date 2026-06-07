@@ -15,6 +15,8 @@ from app.domain.schemas import (
     YearOverYearPoint,
 )
 
+_PERIOD_DAYS = "(period_end - period_start + 1)"
+
 _RT_FILTER = "AND resource_type = :resource_type"
 
 
@@ -39,6 +41,7 @@ class AnalyticsService:
             params["resource_type"] = resource_type.value
 
         monthly_consumption = await self._monthly_consumption(params, rt_clause)
+        daily_consumption = await self._daily_consumption(params, rt_clause)
         monthly_cost = await self._monthly_cost(params, rt_clause)
         price_per_unit = await self._price_per_unit(params, rt_clause)
         year_over_year = await self._year_over_year(params, rt_clause)
@@ -46,6 +49,7 @@ class AnalyticsService:
         monthly_yoy = await self._monthly_yoy(params, rt_clause)
         return AnalyticsSummary(
             monthly_consumption=monthly_consumption,
+            daily_consumption=daily_consumption,
             monthly_cost=monthly_cost,
             price_per_unit=price_per_unit,
             year_over_year=year_over_year,
@@ -73,6 +77,32 @@ class AnalyticsService:
                 month=r.month,
                 resource_type=ResourceType(r.resource_type),
                 value=Decimal(str(r.value)),
+            )
+            for r in rows
+        ]
+
+    async def _daily_consumption(
+        self, params: dict[str, object], rt_clause: str
+    ) -> list[MonthlyDataPoint]:
+        sql = text(
+            "SELECT to_char(date_trunc('month', bill_date), 'YYYY-MM') AS month,"
+            " resource_type,"
+            " CASE WHEN SUM(" + _PERIOD_DAYS + ") > 0"
+            " THEN SUM(amount_consumed) / SUM(" + _PERIOD_DAYS + ")"
+            " ELSE 0 END AS value"
+            " FROM bills"
+            " WHERE user_id = :user_id"
+            " AND deleted_at IS NULL"
+            " AND bill_date BETWEEN :date_from AND :date_to"
+            " " + rt_clause + " GROUP BY 1, 2"
+            " ORDER BY 1, 2"
+        )
+        rows = (await self.db.execute(sql, params)).fetchall()
+        return [
+            MonthlyDataPoint(
+                month=r.month,
+                resource_type=ResourceType(r.resource_type),
+                value=Decimal(str(round(float(r.value), 4))),
             )
             for r in rows
         ]

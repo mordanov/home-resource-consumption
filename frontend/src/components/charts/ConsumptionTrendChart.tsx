@@ -10,10 +10,12 @@ interface DataPoint {
 }
 
 interface Props {
-  data: DataPoint[]
+  totalData: DataPoint[]
+  dailyData: DataPoint[]
 }
 
 type Resource = 'ELECTRICITY' | 'GAS' | 'WATER'
+type Mode = 'total' | 'daily'
 
 const COLORS: Record<Resource, string> = {
   ELECTRICITY: '#f5a524',
@@ -21,9 +23,12 @@ const COLORS: Record<Resource, string> = {
   WATER: '#006FEE',
 }
 
-export function ConsumptionTrendChart({ data }: Props) {
+export function ConsumptionTrendChart({ totalData, dailyData }: Props) {
   const [active, setActive] = useState<Set<Resource>>(new Set(['ELECTRICITY', 'GAS', 'WATER']))
+  const [mode, setMode] = useState<Mode>('total')
   const ref = useRef<HTMLDivElement>(null)
+
+  const data = mode === 'daily' ? dailyData : totalData
 
   function toggleResource(r: Resource) {
     setActive((prev) => {
@@ -55,7 +60,7 @@ export function ConsumptionTrendChart({ data }: Props) {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         {(['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).map((r) => (
           <Chip
             key={r}
@@ -66,9 +71,25 @@ export function ConsumptionTrendChart({ data }: Props) {
             {r}
           </Chip>
         ))}
-        <Button size="sm" variant="flat" onPress={exportPng} style={{ marginLeft: 'auto' }}>
-          Export PNG
-        </Button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          <Chip
+            style={{ cursor: 'pointer' }}
+            variant={mode === 'total' ? 'solid' : 'flat'}
+            onClick={() => setMode('total')}
+          >
+            Total
+          </Chip>
+          <Chip
+            style={{ cursor: 'pointer' }}
+            variant={mode === 'daily' ? 'solid' : 'flat'}
+            onClick={() => setMode('daily')}
+          >
+            Per day
+          </Chip>
+          <Button size="sm" variant="flat" onPress={exportPng}>
+            Export PNG
+          </Button>
+        </div>
       </div>
       <div ref={ref}>
         <ResponsiveContainer width="100%" height={260}>
@@ -76,7 +97,7 @@ export function ConsumptionTrendChart({ data }: Props) {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
-            <Tooltip />
+            <Tooltip formatter={(v: number) => v.toFixed(mode === 'daily' ? 3 : 1)} />
             <Legend />
             {(['ELECTRICITY', 'GAS', 'WATER'] as Resource[]).filter((r) => active.has(r)).map((r) => (
               <Line key={r} type="monotone" dataKey={r} stroke={COLORS[r]} dot={false} />

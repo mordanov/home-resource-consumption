@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, CardBody, CardHeader, Button, Spinner } from '@heroui/react'
+import { Card, CardBody, CardHeader, Button, Chip, Spinner } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -7,6 +8,8 @@ import axiosInstance from '../lib/axios'
 import { queryKeys } from '../lib/queryKeys'
 import type { BillRead } from '../components/BillTable'
 import type { AnalyticsSummary } from './AnalysisPage'
+
+type Mode = 'total' | 'daily'
 
 function TrendArrow({ trend }: { trend: 'up' | 'down' | 'neutral' }) {
   if (trend === 'up') return <span style={{ color: '#f31260' }}>↑</span>
@@ -63,8 +66,23 @@ function ResourceCard({ resourceType }: { resourceType: string }) {
   )
 }
 
+function pivotForDashboard(pts: Array<{ month: string; resource_type: string; value: string }>) {
+  const map = new Map<string, { month: string; electricity?: number; gas?: number; water?: number }>()
+  for (const pt of pts) {
+    if (!map.has(pt.month)) map.set(pt.month, { month: pt.month })
+    const entry = map.get(pt.month)!
+    const v = Number(pt.value)
+    if (pt.resource_type === 'ELECTRICITY') entry.electricity = v
+    else if (pt.resource_type === 'GAS') entry.gas = v
+    else if (pt.resource_type === 'WATER') entry.water = v
+  }
+  return [...map.values()].sort((a, b) => a.month.localeCompare(b.month))
+}
+
 export function DashboardPage() {
   const { t } = useTranslation()
+  const [mode, setMode] = useState<Mode>('total')
+
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: queryKeys.analytics.summary({}),
     queryFn: async () => {
@@ -73,17 +91,9 @@ export function DashboardPage() {
     },
   })
 
-  // API returns flat [{month, resource_type, value}] — pivot to {month, ELECTRICITY?, GAS?, WATER?}
-  const pivoted = new Map<string, { month: string; electricity?: number; gas?: number; water?: number }>()
-  for (const pt of analytics?.monthly_consumption ?? []) {
-    if (!pivoted.has(pt.month)) pivoted.set(pt.month, { month: pt.month })
-    const entry = pivoted.get(pt.month)!
-    const v = Number(pt.value)
-    if (pt.resource_type === 'ELECTRICITY') entry.electricity = v
-    else if (pt.resource_type === 'GAS') entry.gas = v
-    else if (pt.resource_type === 'WATER') entry.water = v
-  }
-  const chartData = [...pivoted.values()].sort((a, b) => a.month.localeCompare(b.month))
+  const totalData = pivotForDashboard(analytics?.monthly_consumption ?? [])
+  const dailyData = pivotForDashboard(analytics?.daily_consumption ?? [])
+  const chartData = mode === 'daily' ? dailyData : totalData
 
   return (
     <div>
@@ -101,8 +111,24 @@ export function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('dashboard.trendTitle')}</h2>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <Chip
+              style={{ cursor: 'pointer' }}
+              variant={mode === 'total' ? 'solid' : 'flat'}
+              onClick={() => setMode('total')}
+            >
+              Total
+            </Chip>
+            <Chip
+              style={{ cursor: 'pointer' }}
+              variant={mode === 'daily' ? 'solid' : 'flat'}
+              onClick={() => setMode('daily')}
+            >
+              Per day
+            </Chip>
+          </div>
         </CardHeader>
         <CardBody>
           {analyticsLoading ? (
@@ -121,7 +147,7 @@ export function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip formatter={(v: number) => v.toFixed(mode === 'daily' ? 3 : 1)} />
                 <Legend />
                 <Line type="monotone" dataKey="electricity" stroke="#f5a524" name={t('dashboard.electricity')} dot={false} />
                 <Line type="monotone" dataKey="gas" stroke="#f31260" name={t('dashboard.gas')} dot={false} />

@@ -66,6 +66,65 @@ def _seeded_monthly_rows(
     return rows
 
 
+def _make_value_row(month: str, resource_type: str, value: float) -> MagicMock:
+    """Build a mock DB row for queries that select AS value."""
+    row = MagicMock(spec=["month", "resource_type", "value"])
+    row.month = month
+    row.resource_type = resource_type
+    row.value = Decimal(str(value))
+    return row
+
+
+# ---------------------------------------------------------------------------
+# T062-0: _daily_consumption returns per-day averages directly
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_daily_consumption_returns_per_day_average() -> None:
+    analytics_service_cls = _import_analytics_service()
+
+    # 1.0 kWh/day — a direct DB result
+    daily_row = _make_value_row("2025-01", "ELECTRICITY", 1.0)
+    total_row = _make_value_row("2025-01", "ELECTRICITY", 30.0)
+
+    mock_session = _make_mock_db_session()
+    call_count = [0]
+
+    async def side_effect(sql, params=None):
+        result = MagicMock()
+        # get_summary calls: monthly_consumption(0), daily_consumption(1),
+        # monthly_cost(2), price_per_unit(3), year_over_year(4),
+        # cumulative_cost_ytd(5), monthly_yoy(6)
+        if call_count[0] == 0:
+            result.fetchall = MagicMock(return_value=[total_row])
+        elif call_count[0] == 1:
+            result.fetchall = MagicMock(return_value=[daily_row])
+        else:
+            result.fetchall = MagicMock(return_value=[])
+        call_count[0] += 1
+        return result
+
+    mock_session.execute = side_effect
+
+    service = analytics_service_cls(db=mock_session)
+    summary = await service.get_summary(
+        user_id=uuid.uuid4(),
+        date_from=date(2025, 1, 1),
+        date_to=date(2025, 1, 31),
+    )
+
+    assert hasattr(summary, "daily_consumption"), "AnalyticsSummary must have daily_consumption"
+    assert isinstance(summary.daily_consumption, list)
+    assert len(summary.daily_consumption) == 1
+
+    daily_val = float(summary.daily_consumption[0].value)
+    total_val = float(summary.monthly_consumption[0].value)
+    assert daily_val == pytest.approx(1.0)
+    assert total_val == pytest.approx(30.0)
+    assert daily_val < total_val, "daily avg must be < total for the same 30-day period"
+
+
 # ---------------------------------------------------------------------------
 # T062-1: 12-month seeded dataset → monthly_consumption has 12 entries
 # ---------------------------------------------------------------------------
