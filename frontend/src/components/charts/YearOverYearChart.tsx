@@ -75,7 +75,7 @@ export function YearOverYearChart({ data }: Props) {
       ) : (
         <ChartDataTable
           columns={TABLE_COLS}
-          rows={data as Record<string, unknown>[]}
+          rows={data as unknown as Record<string, unknown>[]}
           formatValue={(v, k) => {
             if (k === 'resource_type') return String(v)
             if (k === 'change_pct') return v == null ? '—' : `${(v as number) > 0 ? '+' : ''}${(v as number).toFixed(1)}%`

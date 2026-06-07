@@ -73,7 +73,7 @@ export function CumulativeCostChart({ data }: Props) {
       ) : (
         <ChartDataTable
           columns={TABLE_COLS}
-          rows={data as Record<string, unknown>[]}
+          rows={data as unknown as Record<string, unknown>[]}
           formatValue={(v, k) => k === 'month' ? String(v) : (v as number).toFixed(2)}
         />
       )}
