@@ -203,32 +203,34 @@ class AnalyticsService:
             for r in rows
         ]
 
+    @staticmethod
+    def _yoy_period_cte(
+        name: str, date_from_param: str, date_to_param: str, rt_clause: str, shift_year: bool
+    ) -> str:
+        month_col = (
+            " to_char(date_trunc('month', bill_date) + INTERVAL '1 year', 'YYYY-MM') AS month,"
+            if shift_year
+            else " to_char(date_trunc('month', bill_date), 'YYYY-MM') AS month,"
+        )
+        return (
+            f"{name} AS ("
+            f"{month_col}"
+            f" resource_type,"
+            f" SUM(amount_consumed) / {_MONTH_DAYS} AS consumption,"
+            f" SUM(amount_paid) AS cost"
+            f" FROM bills WHERE user_id = :user_id AND deleted_at IS NULL"
+            f" AND bill_date BETWEEN :{date_from_param} AND :{date_to_param}"
+            f" {rt_clause} GROUP BY 1, 2, date_trunc('month', bill_date))"
+        )
+
     def _monthly_yoy_sql(self, rt_clause: str) -> TextClause:
-        # Consumption is normalised to daily average using calendar-month days.
-        month_days_expr = (
-            "DATE_PART('day',"
-            " DATE_TRUNC('month', bill_date) + INTERVAL '1 month'"
-            " - DATE_TRUNC('month', bill_date))"
+        curr = self._yoy_period_cte("current_period", "date_from", "date_to", rt_clause, False)
+        prev = self._yoy_period_cte(
+            "prev_period", "prev_date_from", "prev_date_to", rt_clause, True
         )
         return text(
-            "WITH current_period AS ("
-            " SELECT to_char(date_trunc('month', bill_date), 'YYYY-MM') AS month,"
-            " resource_type,"
-            " SUM(amount_consumed) / " + month_days_expr + " AS consumption,"
-            " SUM(amount_paid) AS cost"
-            " FROM bills WHERE user_id = :user_id AND deleted_at IS NULL"
-            " AND bill_date BETWEEN :date_from AND :date_to"
-            " " + rt_clause + " GROUP BY 1, 2, date_trunc('month', bill_date)"
-            "), prev_period AS ("
-            " SELECT to_char("
-            "  date_trunc('month', bill_date) + INTERVAL '1 year', 'YYYY-MM'"
-            " ) AS month, resource_type,"
-            " SUM(amount_consumed) / " + month_days_expr + " AS consumption,"
-            " SUM(amount_paid) AS cost"
-            " FROM bills WHERE user_id = :user_id AND deleted_at IS NULL"
-            " AND bill_date BETWEEN :prev_date_from AND :prev_date_to"
-            " " + rt_clause + " GROUP BY 1, 2, date_trunc('month', bill_date)"
-            ") SELECT c.month, c.resource_type,"
+            f"WITH {curr}, {prev}"
+            " SELECT c.month, c.resource_type,"
             " c.consumption AS current_consumption,"
             " p.consumption AS prev_year_consumption,"
             " c.cost AS current_cost, p.cost AS prev_year_cost"
