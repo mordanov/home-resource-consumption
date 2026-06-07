@@ -214,7 +214,7 @@ class AnalyticsService:
         )
         return (
             f"{name} AS ("
-            f"{month_col}"
+            f" SELECT{month_col}"
             f" resource_type,"
             f" SUM(amount_consumed) / {_MONTH_DAYS} AS consumption,"
             f" SUM(amount_paid) AS cost"
